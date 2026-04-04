@@ -1,0 +1,26 @@
+[{
+  "_id": {
+    "$oid": "641547d88c68eb956baa26ab"
+  },
+  "category": "Mirrorless"
+},{
+  "_id": {
+    "$oid": "641547eb8c68eb956baa26ac"
+  },
+  "category": "Film Camera"
+},{
+  "_id": {
+    "$oid": "641548138c68eb956baa26ad"
+  },
+  "category": "Compact"
+},{
+  "_id": {
+    "$oid": "641548318c68eb956baa26ae"
+  },
+  "category": "DSLR"
+},{
+  "_id": {
+    "$oid": "641548448c68eb956baa26af"
+  },
+  "category": "Action Camera"
+}]
