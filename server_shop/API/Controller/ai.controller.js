@@ -7,7 +7,6 @@ exports.chat = async (req, res) => {
     try {
         const { message, image } = req.body;
         
-        // --- GIỮ NGUYÊN LOGIC LỌC SẢN PHẨM ---
         let filterCondition = {};
         const priceMatch = (message || "").match(/(\d+)\s*(triệu|tr)/i);
         if (priceMatch) {

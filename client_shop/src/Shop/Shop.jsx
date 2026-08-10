@@ -1,109 +1,106 @@
 import React, { useEffect, useState } from 'react';
-import queryString from 'query-string'
+import queryString from 'query-string';
 import ProductAPI from '../API/ProductAPI';
 import Search from './Component/Search';
 import Pagination from './Component/Pagination';
 import Products from './Component/Products';
-import SortProduct from './Component/SortProduct';
 
 function Shop(props) {
 
-    const [products, setProducts] = useState([])
-    const [temp, setTemp] = useState([])
+    const [products, setProducts] = useState([]);
+    const [temp, setTemp] = useState([]);
 
-    //state dùng để sắp xếp sản phẩm
-    const [sort, setSort] = useState('default')
+    const [sort, setSort] = useState('default');
+    const [totalPage, setTotalPage] = useState();
 
-    //Tổng số trang
-    const [totalPage, setTotalPage] = useState()
+    const [activeCategory, setActiveCategory] = useState('all');
 
-    //Từng trang hiện tại
     const [pagination, setPagination] = useState({
         page: '1',
         count: '9',
-        // search: '',
         category: 'all'
-    })
+    });
 
-    // state categories
     const [categories, setCategories] = useState([]);
 
-    //Hàm nà dùng để lấy value từ component SortProduct truyền lên
-    const handlerChangeSort = (value) => {
-        setSort(value)
-    }
+    const parsePrice = (price) => {
+    if (price === null || price === undefined) return 0;
+    const cleanPrice = price.toString().replace(/\D/g, '');
+    return Number(cleanPrice);
+};
 
-
-    //Hàm này dùng để thay đổi state pagination.page
-    //Nó sẽ truyền xuống Component con và nhận dữ liệu từ Component con truyền lên
     const handlerChangePage = (value) => {
-        console.log("Value: ", value)
-
-        //Sau đó set lại cái pagination để gọi chạy làm useEffect gọi lại API pagination
         setPagination({
-            page: value,
-            count: pagination.count,
-            // search: pagination.search,
-            category: pagination.category
-        })
+            ...pagination,
+            page: value
+        });
     }
 
-    //Hàm này dùng để thay đổi state pagination.search
-    //Hàm này sẽ truyền xuống Component con và nhận dữ liệu từ Component con truyền lên
     const handlerSearch = (value) => {
-        if (!value) {
-            setProducts(temp);
-            return;
+        let filtered = [...temp];
+
+        if (value) {
+            filtered = filtered.filter(item =>
+                item.name.toUpperCase().includes(value.toUpperCase())
+            );
         }
-        const searchProducts = temp.filter(item => item.name.toUpperCase().indexOf(value.toUpperCase()) !== -1);
-        setProducts(searchProducts)
+
+        applySort(filtered, sort);
     }
 
-    //Hàm này dùng để thay đổi state pagination.category
     const handlerCategory = (value) => {
-        console.log("Value: ", value)
-
+        setActiveCategory(value);
         setPagination({
+            ...pagination,
+            page: '1',
+            category: value
+        });
+    }
+
+    const handleSortChange = (value) => {
+    setSort(value);
+    applySort(temp, value); 
+    }
+
+const applySort = (list, sortType) => {
+    let sorted = [...list];
+
+    if (sortType === 'low') {
+        sorted.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
+    } else if (sortType === 'high') {
+        sorted.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
+    }
+    
+    setProducts(sorted);
+};
+
+    useEffect(() => {
+    const fetchAllData = async () => {
+        const params = {
             page: pagination.page,
             count: pagination.count,
-            // search: pagination.search,
-            category: value
-        })
+            category: pagination.category
+        };
+
+        const query = '?' + queryString.stringify(params);
+        const response = await ProductAPI.getPagination(query);
+
+        // Lưu vào temp để làm dữ liệu gốc cho Search/Sort
+        setTemp(response.products); 
+        
+        // Áp dụng sort ngay cho dữ liệu vừa fetch về
+        applySort(response.products, sort);
+
+        const totalPage = Math.ceil(response.total / pagination.count);
+        setTotalPage(totalPage);
     }
 
-    //Gọi hàm useEffect tìm tổng số sản phẩm để tính tổng số trang
-    //Và nó phụ thuộc và state pagination
-    useEffect(() => {
-        const fetchAllData = async () => {
-            let productLength = 0;
-            // Nếu mà category === 'all' thì nó sẽ gọi hàm get tất cả sản phẩm
-            // Ngược lại thì nó sẽ gọi hàm pagination và phân loại sản phẩm
-            const params = {
-                page: pagination.page,
-                count: pagination.count,
-                // search: pagination.search,
-                category: pagination.category
-            }
-
-            const query = queryString.stringify(params)
-
-            const newQuery = '?' + query
-
-            const { products, total } = await ProductAPI.getPagination(newQuery)
-            setProducts(products);
-            setTemp(products);
-
-            //Tính tổng số trang = tổng số sản phẩm / số lượng sản phẩm 1 trang
-            const totalPage = Math.ceil(parseInt(total) / parseInt(pagination.count));
-            console.log(totalPage);
-            setTotalPage(totalPage)
-        }
-        fetchAllData()
-    }, [pagination])
+    fetchAllData();
+}, [pagination]); // Khi chuyển trang hoặc category, fetch lại và tự sort
 
     useEffect(() => {
         fetchCategories();
-    }, [])
+    }, []);
 
     const fetchCategories = async () => {
         const response = await ProductAPI.getCategories();
@@ -113,117 +110,86 @@ function Shop(props) {
 
     return (
         <div className="container">
+
             <section className="py-5 bg-light">
                 <div className="container">
-                    <div className="row px-4 px-lg-5 py-lg-4 align-items-center">
-                        <div className="col-lg-6">
-                            <h1 className="h2 text-uppercase mb-0">Shop</h1>
-                        </div>
-                        <div className="col-lg-6 text-lg-right">
-                            <nav aria-label="breadcrumb">
-                                <ol className="breadcrumb justify-content-lg-end mb-0 px-0">
-                                    <li className="breadcrumb-item active" aria-current="page">Shop</li>
-                                </ol>
-                            </nav>
-                        </div>
-                    </div>
+                    <h1 className="h2 text-uppercase">Shop</h1>
                 </div>
             </section>
-
-
-            {/* -------------Modal Product----------------- */}
-            {
-                products && products.map(value => (
-                    <div className="modal fade show" id={`product_${value._id}`} key={value._id}>
-                        <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
-                            <div className="modal-content">
-                                <div className="modal-body p-0">
-                                    <div className="row align-items-stretch">
-                                        <div className="col-lg-6 p-lg-0">
-                                            <img style={{ width: '100%' }} className="product-view d-block h-100 bg-cover bg-center" src={value.img1} data-lightbox={`product_${value._id}`} />
-                                            <img className="d-none" href={value.img2} />
-                                            <img className="d-none" href={value.img3} />
-                                        </div>
-                                        <div className="col-lg-6">
-                                            {/* Để tắt modal phải có class="close" và data-dissmiss="modal" và aria-label="Close" */}
-                                            <a className="close p-4" type="button" href="#section_product" data-dismiss="modal" aria-label="Close">×</a>
-                                            <div className="p-5 my-md-4">
-                                                <ul className="list-inline mb-2">
-                                                    <li className="list-inline-item m-0"><i className="fas fa-star small text-warning"></i></li>
-                                                    <li className="list-inline-item m-0"><i className="fas fa-star small text-warning"></i></li>
-                                                    <li className="list-inline-item m-0"><i className="fas fa-star small text-warning"></i></li>
-                                                    <li className="list-inline-item m-0"><i className="fas fa-star small text-warning"></i></li>
-                                                    <li className="list-inline-item m-0"><i className="fas fa-star small text-warning"></i></li>
-                                                </ul>
-                                                <h2 className="h4">{value.name}</h2>
-                                                <p className="text-muted">{value.price}</p>
-                                                <p className="text-small mb-4">{value?.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. In ut ullamcorper leo, eget euismod orci. Cum sociis natoque penatibus et magnis dis parturient montes nascetur ridiculus mus. Vestibulum ultricies aliquam convallis.'}</p>
-                                                <div className="row align-items-stretch mb-4">
-                                                    <div className="col-sm-5 pl-sm-0 fix_addwish">
-                                                        <a className="btn btn-dark btn-sm btn-block h-100 d-flex align-items-center justify-content-center px-0">
-                                                            <i className="far fa-heart mr-2"></i>Add Too Wish List</a>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ))
-            }
-            {/* -------------Modal Product----------------- */}
-
 
             <section className="py-5">
                 <div className="container p-0">
                     <div className="row">
-                        <div className="col-lg-3 order-2 order-lg-1">
-    <h5 className="text-uppercase mb-4">Categories</h5>
-    <div className="py-2 px-4 bg-dark text-white mb-3">
-        <strong className="small text-uppercase font-weight-bold">Camera Shop</strong>
-    </div>
-    <ul className="list-unstyled small text-muted pl-lg-4 font-weight-normal">
-        <li className="mb-2">
-            <a className="reset-anchor" href="#" onClick={(e) => { e.preventDefault(); handlerCategory('all'); }}>All</a>
-        </li>
-        {/* Di chuyển vòng lặp map vào bên trong thẻ ul */}
-        {categories && categories.map((item) => (
-            <li className="mb-2" key={item._id}> 
-                <a className="reset-anchor" href="#" onClick={(e) => { e.preventDefault(); handlerCategory(item._id); }}>
-                    {item.category}
-                </a>
-            </li>
-        ))}
-    </ul>
-</div>
-                        <div className="col-lg-9 order-1 order-lg-2 mb-5 mb-lg-0">
+
+                        {/* SIDEBAR */}
+                        <div className="col-lg-3">
+
+                            <div className="mb-4 p-3 bg-dark text-white rounded">
+                                <strong>Categories</strong>
+                            </div>
+
+                            <ul className="list-unstyled category-list">
+                                <li>
+                                    <button
+                                        className={`category-btn ${activeCategory === 'all' ? 'active' : ''}`}
+                                        onClick={() => handlerCategory('all')}
+                                    >
+                                        All
+                                    </button>
+                                </li>
+
+                                {categories.map(item => (
+                                    <li key={item._id}>
+                                        <button
+                                            className={`category-btn ${activeCategory === item._id ? 'active' : ''}`}
+                                            onClick={() => handlerCategory(item._id)}
+                                        >
+                                            {item.category}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+
+                        </div>
+
+                        {/* MAIN */}
+                        <div className="col-lg-9">
+
                             <div className="row mb-3 align-items-center">
+                                <Search 
+                                handlerSearch={handlerSearch}
+                                products={temp}
+                                 />
 
-                                {/* ------------------Search----------------- */}
-                                <Search handlerSearch={handlerSearch} />
-                                {/* ------------------Search----------------- */}
-
-                                <div className="col-lg-8">
-                                    <ul className="list-inline d-flex align-items-center justify-content-lg-end mb-0">
-                                        <li className="list-inline-item">
-                                            <SortProduct handlerChangeSort={handlerChangeSort} />
-                                        </li>
-                                    </ul>
+                                {/* SORT DROPDOWN */}
+                                <div className="col-lg-4 text-right">
+                                    <select
+                                        className="form-control"
+                                        value={sort}
+                                        onChange={(e) => handleSortChange(e.target.value)}
+                                    >
+                                        <option value="default">Default sorting</option>
+                                        <option value="low">Price: Low to High</option>
+                                        <option value="high">Price: High to Low</option>
+                                    </select>
                                 </div>
                             </div>
 
-                            <Products products={products} sort={sort} />
+                            <Products products={products} />
 
-                            <Pagination pagination={pagination} handlerChangePage={handlerChangePage} totalPage={totalPage} />
+                            <Pagination
+                                pagination={pagination}
+                                handlerChangePage={handlerChangePage}
+                                totalPage={totalPage}
+                            />
 
                         </div>
+
                     </div>
                 </div>
             </section>
+
         </div>
     );
 }
-
 export default Shop;

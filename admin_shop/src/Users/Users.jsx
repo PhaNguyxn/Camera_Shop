@@ -13,7 +13,7 @@ function Users() {
 
 
 
-    // 🔥 LOAD DATA
+    
 
     const fetchData = async () => {
 

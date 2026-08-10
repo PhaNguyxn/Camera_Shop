@@ -6,7 +6,6 @@ function Header(props) {
     const history = useHistory();
 
     useEffect(() => {
-        // Render lại các icon như settings, power sau khi component mount
         feather.replace();
     }, []);
 
@@ -16,16 +15,13 @@ function Header(props) {
         localStorage.removeItem('id_user');
         localStorage.removeItem('name_user');
         
-        // Điều hướng về trang login bằng useHistory
         history.push('/login');
     };
 
-    // QUY TẮC ĐƯỜNG DẪN ẢNH CHO THƯ MỤC PUBLIC:
-    // Vì ảnh nằm trong public/assets/images/..., bạn chỉ cần bắt đầu bằng dấu "/"
     const LogoIcon = "/assets/images/logo-icon.png";
     const LogoText = "/assets/images/logo-text.png";
     const LogoLight = "/assets/images/logo-light-text.png";
-    const UserImg = "/assets/images/img3.jpg"; // File img3.jpg hiển thị trong ảnh cấu trúc của bạn
+    const UserImg = "/assets/images/img3.jpg"; 
 
     return (
         <header className="topbar" data-navbarbg="skin6">

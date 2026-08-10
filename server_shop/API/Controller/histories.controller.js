@@ -37,3 +37,21 @@ module.exports.postHistory = async (req, res) => {
         res.status(500).json({ message: "Lỗi server khi lưu đơn hàng" })
     }
 }
+
+module.exports.updateStatus = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { status } = req.body;
+
+        const updated = await Histories.findByIdAndUpdate(
+            id,
+            { status: status },
+            { new: true }
+        );
+
+        res.json(updated);
+
+    } catch (error) {
+        res.status(500).json({ message: "Update thất bại" });
+    }
+};

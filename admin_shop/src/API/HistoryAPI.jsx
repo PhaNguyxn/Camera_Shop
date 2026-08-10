@@ -17,6 +17,10 @@ const HistoryAPI = {
         return axiosClient.get(url)
     },
 
+    updateStatus: (id, data) => {
+    return axiosClient.put(`/histories/update-status/${id}`, data);
+    }
+
 }
 
 export default HistoryAPI

@@ -15,5 +15,6 @@ router.get('/:id', Histories.detail)
 
 router.post('/', Histories.postHistory)
 
+router.put('/update-status/:id', Histories.updateStatus)
 
 module.exports = router

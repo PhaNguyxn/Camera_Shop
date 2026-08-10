@@ -37,7 +37,6 @@
   }
 }
 
-/* Badge màu nhẹ nhàng chuyên nghiệp */
 .bg-success {
     background-color: #e1f6ed !important;
     color: #1cc88a !important;
@@ -48,8 +47,55 @@
     color: #f6c23e !important;
 }
 
-/* Hiệu ứng đường kẻ bên trái card thống kê */
 .border-left-primary { border-left: 0.25rem solid #4e73df !important; }
 .border-left-success { border-left: 0.25rem solid #1cc88a !important; }
 .border-left-info { border-left: 0.25rem solid #36b9cc !important; }
 .border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #28a745;
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+/* disabled */
+input:disabled + .slider {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

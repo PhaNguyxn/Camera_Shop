@@ -19,7 +19,7 @@ function Products() {
 
     const [totalPage, setTotalPage] = useState();
 
-    // 🔍 SEARCH (giữ local filter)
+   
     const onChangeText = (e) => {
         const value = e.target.value;
         setPagination({ ...pagination, search: value });
@@ -58,7 +58,7 @@ function Products() {
         }
     };
 
-    // 🔥 LOAD DATA
+    
     const fetchAllData = async () => {
         try {
             const params = {
@@ -110,7 +110,7 @@ function Products() {
                                 placeholder="Enter Search!"
                             />
 
-                            {/* ✅ FIX dùng Link */}
+                            
                             <a href={`/products/view-edit`} style={{cursor: 'pointer', color: 'white'}} className="btn btn-success">Create Product</a>
                         </div>
 
@@ -153,7 +153,7 @@ function Products() {
     </div>
 </td>
 
-                                            {/* ✅ FIX CATEGORY NAME */}
+                                            
                                             <td>
                                                 {typeof value.category === 'object'
                                                     ? value.category.name

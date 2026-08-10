@@ -146,7 +146,6 @@ function Home(props) {
                     </div>
                 </div>
 
-                {/* Table đơn hàng giữ nguyên cấu hình của bạn */}
                 <div className="row mt-4">
                     <div className="col-12">
                         <div className="card shadow-sm" style={{ borderRadius: '15px' }}>

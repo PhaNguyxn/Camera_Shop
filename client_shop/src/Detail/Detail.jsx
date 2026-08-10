@@ -11,6 +11,8 @@ import CommentAPI from '../API/CommentAPI';
 function Detail(props) {
     const [detail, setDetail] = useState({})
 
+    const [recentProducts, setRecentProducts] = useState([]);
+
     const dispatch = useDispatch()
 
     //id params cho từng sản phẩm
@@ -59,6 +61,8 @@ function Detail(props) {
         fetchData()
 
     }, [id])
+
+
 
     useEffect(() => {
         window.scrollTo({
@@ -268,6 +272,34 @@ function Detail(props) {
         alertify.success('Bạn Đã Thêm Hàng Thành Công!');
     }
 
+    useEffect(() => {
+    if (detail && detail._id) {
+        let viewed = JSON.parse(localStorage.getItem('recently_viewed')) || [];
+
+        // Xóa trùng
+        viewed = viewed.filter(item => item._id !== detail._id);
+
+        // Thêm lên đầu
+        viewed.unshift(detail);
+
+        // Giới hạn 5 sản phẩm
+        if (viewed.length > 5) {
+            viewed = viewed.slice(0, 5);
+        }
+
+        localStorage.setItem('recently_viewed', JSON.stringify(viewed));
+    }
+}, [detail]);
+
+useEffect(() => {
+    const viewed = JSON.parse(localStorage.getItem('recently_viewed')) || [];
+
+    // bỏ sản phẩm hiện tại
+    const filtered = viewed.filter(item => item._id !== id);
+
+    setRecentProducts(filtered);
+}, [id]);
+
 
     return (
         <section className="py-5">
@@ -437,6 +469,36 @@ function Detail(props) {
                             </div>
                         </div>)
                     }
+                </div>
+                {/* Recently Viewed */}
+                <div className="mt-5">
+                    <h5 className="text-uppercase mb-4">Recently Viewed</h5>
+
+                    <div className="row">
+                        {recentProducts.length > 0 ? (
+                            recentProducts.map(item => (
+                                <div className="col-lg-3 col-md-4 col-6 mb-4" key={item._id}>
+                                    <div className="card border-0 shadow-sm h-100">
+                                        <Link to={`/detail/${item._id}`}>
+                                            <img 
+                                                src={item.img1} 
+                                                className="card-img-top"
+                                                style={{ height: '200px', objectFit: 'cover' }}
+                                                alt={item.name}
+                                            />
+                                        </Link>
+
+                                        <div className="card-body p-2">
+                                            <h6 style={{ fontSize: '14px' }}>{item.name}</h6>
+                                            <p className="text-danger mb-0">{item.price}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <p>Chưa có sản phẩm nào</p>
+                        )}
+                    </div>
                 </div>
             </div>
         </section >

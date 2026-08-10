@@ -12,7 +12,6 @@ const ViewHistory = () => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Hàm format ngày tháng: dd/mm/yyyy hh:mm
     const formatDate = (date) => {
         if (!date) return '';
         const d = new Date(date);
@@ -109,7 +108,6 @@ const ViewHistory = () => {
                                             disabled 
                                         />
                                     </div>
-                                    {/* THÊM NGÀY ĐẶT VÀO ĐÂY */}
                                     <div className="col-md-6 mb-3">
                                         <label>Order Date:</label>
                                         <input 
