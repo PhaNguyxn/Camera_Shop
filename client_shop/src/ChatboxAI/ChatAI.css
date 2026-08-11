@@ -505,3 +505,39 @@
     color: #e67e22; 
     text-decoration: underline; 
 }
+
+.product-image-link {
+    display: block;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+}
+
+.product-img-thumb {
+    cursor: pointer;
+    display: block;
+}
+
+.p-main-name {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+}
+
+.p-main-name:hover {
+    text-decoration: underline;
+}
+
+.click-for-detail {
+    cursor: pointer;
+}
+
+.p-action {
+    position: relative;
+    z-index: 3;
+    cursor: pointer;
+}

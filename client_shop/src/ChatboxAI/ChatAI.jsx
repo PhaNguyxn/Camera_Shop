@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import { useHistory } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import "./ChatAI.css";
 
@@ -24,25 +24,27 @@ const ChatAI = () => {
 
   const fileInputRef = useRef(null);
 
-  const history = useHistory();
-
-
-  const goToProductDetail = (productId) => {
-    history.push(`/detail/${productId}`);
-  };
-
 
   const handleAddToCart = async (product) => {
     const idUser = sessionStorage.getItem("id_user");
 
     if (!idUser) {
       alert("Vui lòng đăng nhập để thêm vào giỏ hàng!");
+      return;
+    }
+
+    const productId = product?._id || product?.id;
+
+    if (!productId) {
+      console.error("Sản phẩm không có ID:", product);
+
+      alert("Không tìm thấy ID sản phẩm!");
 
       return;
     }
 
     try {
-      const query = `?idUser=${idUser}&idProduct=${product._id}&count=1`;
+      const query = `?idUser=${idUser}&idProduct=${productId}&count=1`;
 
       const response = await CartAPI.postAddToCart(query);
 
@@ -206,9 +208,26 @@ const ChatAI = () => {
     }
   };
 
+  const formatPrice = (price) => {
+    if (price === null || price === undefined || price === "") {
+      return "Liên hệ";
+    }
+
+    if (typeof price === "number") {
+      return price.toLocaleString("vi-VN") + " đ";
+    }
+
+    const cleanPrice = price.toString().replace(/[^\d]/g, "");
+
+    if (!cleanPrice) {
+      return price.toString();
+    }
+
+    return Number(cleanPrice).toLocaleString("vi-VN") + " đ";
+  };
+
   return (
     <div className="chatbot-wrapper">
-
       <button
         type="button"
         className={`chat-launcher ${isOpen ? "active" : ""}`}
@@ -220,8 +239,6 @@ const ChatAI = () => {
 
       {isOpen && (
         <div className="chat-container-main">
-          {/* HEADER */}
-
           <div className="chat-header-custom">
             <div className="d-flex align-items-center">
               <div className="ai-status-dot"></div>
@@ -254,7 +271,6 @@ const ChatAI = () => {
                 )}
 
                 <div className="bubble">
-
                   {msg.image && (
                     <img
                       src={msg.image}
@@ -262,7 +278,6 @@ const ChatAI = () => {
                       alt="Ảnh người dùng gửi"
                     />
                   )}
-
 
                   <div
                     className="text-content"
@@ -273,53 +288,53 @@ const ChatAI = () => {
                     {msg.text}
                   </div>
 
-
                   {msg.role === "ai" && msg.products?.length > 0 && (
                     <div className="recommended-container">
-                      {msg.products.map((product) => (
-                        <div key={product._id} className="product-card-premium">
-                          <div className="product-card-body">
+                      {msg.products.map((product) => {
+                        const productId = product._id || product.id;
 
-                            <button
-                              type="button"
-                              className="border-0 bg-transparent p-0"
-                              onClick={() => goToProductDetail(product._id)}
-                            >
-                              <img
-                                src={product.img1}
-                                alt={product.name}
-                                className="product-img-thumb click-for-detail"
-                              />
-                            </button>
+                        return (
+                          <div key={productId} className="product-card-premium">
+                            <div className="product-card-body">
 
+                              <Link
+                                to={`/detail/${productId}`}
+                                className="product-image-link"
+                                title={`Xem ${product.name}`}
+                              >
+                                <img
+                                  src={product.img1}
+                                  alt={product.name}
+                                  className="product-img-thumb click-for-detail"
+                                />
+                              </Link>
 
-                            <div className="product-details">
+                              <div className="product-details">
+
+                                <Link
+                                  to={`/detail/${productId}`}
+                                  className="p-main-name click-for-detail"
+                                  title={`Xem ${product.name}`}
+                                >
+                                  {product.name}
+                                </Link>
+
+                                <div className="p-main-price">
+                                  {formatPrice(product.price)}
+                                </div>
+                              </div>
+
                               <button
                                 type="button"
-                                className="p-main-name click-for-detail border-0 bg-transparent p-0 text-left"
-                                onClick={() => goToProductDetail(product._id)}
+                                className="p-action"
+                                onClick={() => handleAddToCart(product)}
                               >
-                                {product.name}
+                                + Thêm
                               </button>
-
-                              <div className="p-main-price">
-                                {Number(product.price).toLocaleString("vi-VN")}
-
-                                {" đ"}
-                              </div>
                             </div>
-
-
-                            <button
-                              type="button"
-                              className="p-action"
-                              onClick={() => handleAddToCart(product)}
-                            >
-                              + Thêm
-                            </button>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
 
                       <div className="action-suggestion-group">
                         <button
@@ -360,7 +375,6 @@ const ChatAI = () => {
             )}
 
             <form className="input-wrapper" onSubmit={handleSendAI}>
-
               <button
                 type="button"
                 className="border-0 bg-transparent"
@@ -378,14 +392,12 @@ const ChatAI = () => {
                 onChange={handleImageChange}
               />
 
-
               <input
                 type="text"
                 placeholder="Nhập câu hỏi..."
                 value={aiMessage}
                 onChange={(e) => setAiMessage(e.target.value)}
               />
-
 
               <button
                 type="submit"

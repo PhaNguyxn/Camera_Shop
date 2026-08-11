@@ -19,25 +19,23 @@ import Shop from './Shop/Shop';
 function App() {
   return (
     <div className="App">
-        <BrowserRouter>
-          <Header />
-          
-          <Switch>
+      <BrowserRouter>
+        <Header />
 
-            <Route exact path='/' component={Home} />
-            <Route path='/detail/:id' component={Detail} />
-            <Route path='/cart' component={Cart} />
-            <Route path='/signin' component={SignIn} />
-            <Route path='/signup' component={SignUp} />
-            <Route path='/checkout' component={Checkout} />
-            <Route path='/history' component={History} />
-            <Route path='/shop' component={Shop} />
-
-          </Switch>
-        </BrowserRouter>
-
+        <Switch>
+          <Route exact path="/" component={Home} />
+          <Route path="/detail/:id" component={Detail} />
+          <Route path="/cart" component={Cart} />
+          <Route path="/signin" component={SignIn} />
+          <Route path="/signup" component={SignUp} />
+          <Route path="/checkout" component={Checkout} />
+          <Route path="/history" component={History} />
+          <Route path="/shop" component={Shop} />
+        </Switch>
+        <ChatAI />
+      </BrowserRouter>
+      
       <Footer />
-      <ChatAI />
     </div>
   );
 }
