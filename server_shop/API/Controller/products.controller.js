@@ -1,6 +1,7 @@
 
 const Categories = require('../../Model/categories.model')
 const Products = require('../../Model/products.model')
+const uploadCloudinary = require("../../utils/uploadCloudinary");
 
 //Get All Product
 module.exports.index = async (req, res) => {
@@ -70,21 +71,34 @@ module.exports.deleteCategory = async (req, res) => {
 
 // POST Product
 module.exports.createProduct = async (req, res) => {
-    try {
-        var fileImage = req.files.file;
-        var fileName = fileImage.name;
-        var fileProduct = "http://localhost:8000/" + fileName;
-        fileImage.mv('./public/' + fileName);
-        const data = {
-            ...req.body,
-            img1: fileProduct
-        };
-        const product = await Products.create(data);
-        res.json(product);
-    } catch (error) {
-        return res.json('Server Error!');
+  try {
+    if (!req.files || !req.files.file) {
+      return res.status(400).json({
+        message: "Image is required",
+      });
     }
-}
+
+    const fileImage = req.files.file;
+
+    const uploadResult = await uploadCloudinary(fileImage.data);
+
+    const data = {
+      ...req.body,
+
+      img1: uploadResult.secure_url,
+    };
+
+    const product = await Products.create(data);
+
+    return res.json(product);
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Create product failed",
+    });
+  }
+};
 
 // PUT Product
 module.exports.updateProduct = async (req, res) => {
@@ -93,14 +107,10 @@ module.exports.updateProduct = async (req, res) => {
         const { name, price, category, description } = req.body;
         var product = await Products.findOne({_id: id});
 
-        if (req.files?.file) {
-            var fileImage = req.files.file;
-            var fileName = fileImage.name;
-            var fileProduct = "http://localhost:8000/" + fileName;
-            fileImage.mv('./public/' + fileName);
-            product.img1 = fileProduct;
-        } else {
-            product.img1 =  product.img1;
+        if (req.files && req.files.file) {
+          const uploadResult = await uploadCloudinary(req.files.file.data);
+
+          product.img1 = uploadResult.secure_url;
         }
         
         product.name = name;

@@ -1,5 +1,6 @@
 
 const Users = require('../../Model/users.model')
+const bcrypt = require("bcrypt");
 
 module.exports.index = async (req, res) => {
 
@@ -20,34 +21,74 @@ module.exports.detail = async (req, res) => {
 }
 
 module.exports.signup = async (req, res) => {
-
-    const { fullname, email, password, phone } = req.query;
+  try {
+    const { fullname, email, password, phone } = {
+      ...req.query,
+      ...req.body,
+    };
 
     if (!fullname || !email || !password || !phone) {
-        return res.json("missing data");
+      return res.status(400).json("missing data");
     }
 
-    const user = await Users.create({
-        fullname,
-        email,
-        password,
-        phone
+    const exists = await Users.findOne({
+      email,
     });
 
-    res.json(user);
-}
+    if (exists) {
+      return res.status(400).json("Email already exists");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await Users.create({
+      fullname,
+      email,
+      password: hashedPassword,
+      phone,
+    });
+
+    const result = user.toObject();
+
+    delete result.password;
+
+    return res.json(result);
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json("Server Error!");
+  }
+};
 
 module.exports.login = async (req, res) => {
+  try {
     const { email, password } = req.body;
 
-    const users = await Users.findOne({email, password});
+    const user = await Users.findOne({
+      email,
+    });
 
-    if (users) {
-        res.json(users);
-    } else {
-        res.json("false");
+    if (!user) {
+      return res.json("false");
     }
-}
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.json("false");
+    }
+
+    const result = user.toObject();
+
+    delete result.password;
+
+    return res.json(result);
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json("Server Error!");
+  }
+};
 
 module.exports.delete = async (req, res) => {
     try {
