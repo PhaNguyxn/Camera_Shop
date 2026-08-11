@@ -1,309 +1,309 @@
+import React, { useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, Redirect } from "react-router-dom";
 
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { deleteCart, updateCart } from '../Redux/Action/ActionCart';
-import ListCart from './Component/ListCart';
-import alertify from 'alertifyjs'
-import { Link, Redirect } from 'react-router-dom'
-import CartAPI from '../API/CartAPI';
-import queryString from 'query-string'
+import alertify from "alertifyjs";
+import queryString from "query-string";
+
+import { deleteCart, updateCart } from "../Redux/Action/ActionCart";
+import ListCart from "./Component/ListCart";
+import CartAPI from "../API/CartAPI";
+
+const calculateTotal = (carts = []) => {
+  let subTotal = 0;
+
+  carts.forEach((value) => {
+    const price = value.priceProduct
+      .toString()
+      .replace(/\./g, "")
+      .replace(" đ", "");
+
+    subTotal += parseInt(price, 10) * parseInt(value.count, 10);
+  });
+
+  return subTotal;
+};
+
+function Cart() {
+
+  const listCart = useSelector((state) => state.Cart.listCart);
+
+  const [cart, setCart] = useState([]);
+
+  const [total, setTotal] = useState(0);
+
+  const [redirect, setRedirect] = useState(false);
+
+  const dispatch = useDispatch();
+
+  const idUser = sessionStorage.getItem("id_user");
 
 
-function Cart(props) {
-
-    //id_user được lấy từ redux
-    const id_user = useSelector(state => state.Cart.id_user)
-
-    //listCart được lấy từ redux
-    const listCart = useSelector(state => state.Cart.listCart)
-
-    const [cart, setCart] = useState([])
-
-    const [total, setTotal] = useState()
-
-    const dispatch = useDispatch()
-
-    //State dùng để Load dữ liệu từ Redux
-    const [loadRedux, setLoadRedux] = useState({
-        idProduct: '',
-        count: ''
-    })
-
-    //State dùng để Load dữ liệu từ API
-    const [loadAPI, setLoadAPI] = useState(false)
-
-    //Hàm này dùng để Load dữ liệu ở Redux
-    //Khi người dùng chưa đăng nhập
-    useEffect(() => {
-
-        const fetchDataRedux = () => {
-
-            if (!sessionStorage.getItem('id_user')){
-                setCart(listCart)
-
-                getTotal(listCart)
-            }
-
-        }
-
-        fetchDataRedux()
-
-    }, [loadRedux])
-
-    //Hàm này dùng để tính tổng tiền carts
-    function getTotal(carts) {
-
-        let sub_total = 0
-
-        carts.forEach(value => {
-
-            const price = value.priceProduct
-                .replace(/\./g, "")
-                .replace(" đ", "")
-
-            sub_total += parseInt(price) * parseInt(value.count)
-
-        })
-
-        setTotal(sub_total)
-
+  const fetchCartFromAPI = useCallback(async () => {
+    if (!idUser) {
+      return;
     }
 
-    //Hàm này dùng để load dữ liệu từ API
-    //Khi người dùng đã đăng nhập
-    useEffect(() => {
+    try {
+      const params = {
+        idUser,
+      };
 
-        const fetchData = async () => {
+      const query = "?" + queryString.stringify(params);
 
-            if (sessionStorage.getItem('id_user')){
+      const response = await CartAPI.getCarts(query);
 
-                const params = {
-                    idUser: sessionStorage.getItem('id_user')
-                }
+      const carts = Array.isArray(response) ? response : [];
 
-                const query = '?' + queryString.stringify(params)
+      setCart(carts);
 
-                console.log(query)
+      setTotal(calculateTotal(carts));
+    } catch (error) {
+      console.error("Load cart error:", error);
 
-                const response = await CartAPI.getCarts(query)
+      setCart([]);
+      setTotal(0);
+    }
+  }, [idUser]);
 
-                setCart(response)
+  useEffect(() => {
 
-                getTotal(response)
+    if (idUser) {
+      fetchCartFromAPI();
 
-            }
-
-        }
-
-        fetchData()
-
-        setLoadAPI(false)
-
-    }, [loadAPI])
-
-
-    //Hàm này dùng để truyền xuống cho component con xử và trả ngược dữ liệu lại component cha 
-    const onDeleteCart = (getUser, getProduct) => {
-        console.log( "idUser: " + getUser + ", idProduct: " + getProduct)
-
-        if (sessionStorage.getItem('id_user')){ // user đã đăng nhập
-
-            //Sau khi nhận được dữ liệu ở component con truyền lên thì sẽ gọi API xử lý dữ liệu
-            const fetchDelete = async () => {
-
-                const params = {
-                    idUser: getUser,
-                    idProduct: getProduct
-                }
-
-                const query = '?' + queryString.stringify(params)
-
-                const response = await CartAPI.deleteToCart(query)
-                console.log(response)
-
-            }
-
-            fetchDelete()
-
-            //Sau đó thay đổi state loadAPI và load lại hàm useEffect
-            setLoadAPI(true)
-
-            alertify.set('notifier','position', 'bottom-left');
-            alertify.error('Bạn Đã Xóa Hàng Thành Công!');
-
-        }else{ // user chưa đăng nhập
-
-            //Nếu không có phiên làm việc của Session User thì mình sẽ xử lý với Redux
-            const data = {
-                idProduct: getProduct,
-                idUser: getUser,
-            }
-
-            //Đưa dữ liệu vào Redux
-            const action = deleteCart(data)
-            dispatch(action)
-
-            alertify.set('notifier','position', 'bottom-left');
-            alertify.error('Bạn Đã Xóa Hàng Thành Công!');
-
-            //set state loadRedux để nó load lại hàm useEffect để tiếp tục lấy dữ liệu từ redux
-            setLoadRedux({
-                idProduct: getProduct,
-                count: ''
-            })
-            
-        }
-
+      return;
     }
 
-    //Hàm này dùng để truyền xuống cho component con xử và trả ngược dữ liệu lại component cha 
-    const onUpdateCount = (getUser, getProduct, getCount) => {
-        console.log("Count: " + getCount + ", idUser: " + getUser + ", idProduct: " + getProduct)
+    const carts = Array.isArray(listCart) ? listCart : [];
 
-        if (sessionStorage.getItem('id_user')){ // user đã đăng nhập
+    setCart(carts);
 
-            //Sau khi nhận được dữ liệu ở component con truyền lên thì sẽ gọi API xử lý dữ liệu
-            const fetchPut = async () => {
+    setTotal(calculateTotal(carts));
+  }, [idUser, listCart, fetchCartFromAPI]);
 
-                const params = {
-                    idUser: getUser,
-                    idProduct: getProduct,
-                    count: getCount
-                }
+  const onDeleteCart = async (getUser, getProduct) => {
+    if (idUser) {
+      try {
+        const params = {
+          idUser: getUser,
+          idProduct: getProduct,
+        };
 
-                const query = '?' + queryString.stringify(params)
+        const query = "?" + queryString.stringify(params);
 
-                const response = await CartAPI.putToCart(query)
-                console.log(response)
-                
-            }
+        await CartAPI.deleteToCart(query);
 
-            fetchPut()
+        await fetchCartFromAPI();
 
-            //Sau đó thay đổi state loadAPI và load lại hàm useEffect
-            setLoadAPI(true)
+        alertify.set("notifier", "position", "bottom-left");
 
-            console.log("Ban Da Dang Nhap!")
+        alertify.success("Bạn đã xóa sản phẩm thành công!");
+      } catch (error) {
+        console.error("Delete cart error:", error);
 
-            alertify.set('notifier','position', 'bottom-left');
-            alertify.success('Bạn Đã Sửa Hàng Thành Công!');
+        alertify.set("notifier", "position", "bottom-left");
 
-        }else{
+        alertify.error("Xóa sản phẩm thất bại!");
+      }
 
-            //Nếu không có phiên làm việc của Session User thì mình sẽ xử lý với Redux
-            const data = {
-                idProduct: getProduct,
-                idUser: getUser,
-                count: getCount
-            }
-
-            //Đưa dữ liệu vào Redux
-            const action = updateCart(data)
-            dispatch(action)
-
-            alertify.set('notifier','position', 'bottom-left');
-            alertify.success('Bạn Đã Sửa Hàng Thành Công!');
-
-            //set state loadRedux để nó load lại hàm useEffect để tiếp tục lấy dữ liệu từ redux
-            setLoadRedux({
-                idProduct: getProduct,
-                count: getCount
-            })
-        }
-
+      return;
     }
 
-    //Hàm này dùng để redirect đến page checkout
-    const [redirect, setRedirect] = useState(false)
+    const data = {
+      idProduct: getProduct,
+      idUser: getUser,
+    };
 
-    const onCheckout = () => {
-        
-        if (!sessionStorage.getItem('id_user')){
-            alertify.set('notifier','position', 'bottom-left');
-            alertify.error('Vui Lòng Kiểm Tra Lại Đăng Nhập!');
-            return
-        }
+    const action = deleteCart(data);
 
-        if (cart.length === 0){
-            alertify.set('notifier','position', 'bottom-left');
-            alertify.error('Vui Lòng Kiểm Tra Lại Giỏ Hàng!');
-            return
-        }
-        
-        setRedirect(true)
+    dispatch(action);
 
+    alertify.set("notifier", "position", "bottom-left");
+
+    alertify.success("Bạn đã xóa sản phẩm thành công!");
+  };
+
+  const onUpdateCount = async (getUser, getProduct, getCount) => {
+    if (idUser) {
+      try {
+        const params = {
+          idUser: getUser,
+          idProduct: getProduct,
+          count: getCount,
+        };
+
+        const query = "?" + queryString.stringify(params);
+
+        await CartAPI.putToCart(query);
+
+        await fetchCartFromAPI();
+
+        alertify.set("notifier", "position", "bottom-left");
+
+        alertify.success("Bạn đã cập nhật giỏ hàng thành công!");
+      } catch (error) {
+        console.error("Update cart error:", error);
+
+        alertify.set("notifier", "position", "bottom-left");
+
+        alertify.error("Cập nhật giỏ hàng thất bại!");
+      }
+
+      return;
     }
 
-    return (
+    const data = {
+      idProduct: getProduct,
+      idUser: getUser,
+      count: getCount,
+    };
+
+    const action = updateCart(data);
+
+    dispatch(action);
+
+    alertify.set("notifier", "position", "bottom-left");
+
+    alertify.success("Bạn đã cập nhật giỏ hàng thành công!");
+  };
+
+  const onCheckout = () => {
+    if (!idUser) {
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Vui lòng đăng nhập trước khi thanh toán!");
+
+      return;
+    }
+
+    if (cart.length === 0) {
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Giỏ hàng đang trống!");
+
+      return;
+    }
+
+    setRedirect(true);
+  };
+
+  return (
+    <div className="container">
+      {/* HEADER */}
+      <section className="py-5 bg-light">
         <div className="container">
-            <section className="py-5 bg-light">
-                <div className="container">
-                    <div className="row px-4 px-lg-5 py-lg-4 align-items-center">
-                        <div className="col-lg-6">
-                            <h1 className="h2 text-uppercase mb-0">Cart</h1>
-                        </div>
-                        <div className="col-lg-6 text-lg-right">
-                            <nav aria-label="breadcrumb">
-                                <ol className="breadcrumb justify-content-lg-end mb-0 px-0">
-                                    <li className="breadcrumb-item active" aria-current="page">Cart</li>
-                                </ol>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            <section className="py-5">
-                <h2 className="h5 text-uppercase mb-4">Shopping cart</h2>
-                <div className="row">
-                    <div className="col-lg-8 mb-4 mb-lg-0">
-                        
-                        <ListCart 
-                            listCart={cart} 
-                            onDeleteCart={onDeleteCart} 
-                            onUpdateCount={onUpdateCount} />
+          <div className="row px-4 px-lg-5 py-lg-4 align-items-center">
+            <div className="col-lg-6">
+              <h1 className="h2 text-uppercase mb-0">Cart</h1>
+            </div>
 
-                        <div className="bg-light px-4 py-3">
-                            <div className="row align-items-center text-center">
-                                <div className="col-md-6 mb-3 mb-md-0 text-md-left">
-                                    <Link className="btn btn-link p-0 text-dark btn-sm" to={`/shop`}>
-                                        <i className="fas fa-long-arrow-alt-left mr-2"> </i>Continue shopping
-                                    </Link>                
-                                </div>
-                                <div className="col-md-6 text-md-right">
-                                    {
-                                        redirect && <Redirect to={'/checkout'} />
-                                    }
-                                    <span className="btn btn-outline-dark btn-sm" onClick={onCheckout}>
-                                        Procceed to checkout<i className="fas fa-long-arrow-alt-right ml-2"></i>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-lg-4">
-                        <div className="card border-0 rounded-0 p-lg-4 bg-light">
-                            <div className="card-body">
-                                <h5 className="text-uppercase mb-4">Cart total</h5>
-                                <ul className="list-unstyled mb-0">
-                                    <li className="d-flex align-items-center justify-content-between"><strong className="text-uppercase small font-weight-bold">Subtotal</strong><span className="text-muted small">{total}đ</span></li>
-                                    <li className="border-bottom my-2"></li>
-                                    <li className="d-flex align-items-center justify-content-between mb-4"><strong className="text-uppercase small font-weight-bold">Total</strong><span>{total}đ</span></li>
-                                    <li>
-                                        <form>
-                                            <div className="form-group mb-0">
-                                                <input className="form-control" type="text" placeholder="Enter your coupon" />
-                                                <button className="btn btn-dark btn-sm btn-block" type="submit"> <i className="fas fa-gift mr-2"></i>Apply coupon</button>
-                                            </div>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <div className="col-lg-6 text-lg-right">
+              <nav aria-label="breadcrumb">
+                <ol className="breadcrumb justify-content-lg-end mb-0 px-0">
+                  <li className="breadcrumb-item active" aria-current="page">
+                    Cart
+                  </li>
+                </ol>
+              </nav>
+            </div>
+          </div>
         </div>
-    );
+      </section>
+
+      {/* CART */}
+      <section className="py-5">
+        <h2 className="h5 text-uppercase mb-4">Shopping cart</h2>
+
+        <div className="row">
+          <div className="col-lg-8 mb-4 mb-lg-0">
+            <ListCart
+              listCart={cart}
+              onDeleteCart={onDeleteCart}
+              onUpdateCount={onUpdateCount}
+            />
+
+            <div className="bg-light px-4 py-3">
+              <div className="row align-items-center text-center">
+                <div className="col-md-6 mb-3 mb-md-0 text-md-left">
+                  <Link
+                    className="btn btn-link p-0 text-dark btn-sm"
+                    to="/shop"
+                  >
+                    <i className="fas fa-long-arrow-alt-left mr-2"></i>
+                    Continue shopping
+                  </Link>
+                </div>
+
+                <div className="col-md-6 text-md-right">
+                  {redirect && <Redirect to="/checkout" />}
+
+                  <button
+                    type="button"
+                    className="btn btn-outline-dark btn-sm"
+                    onClick={onCheckout}
+                  >
+                    Proceed to checkout
+                    <i className="fas fa-long-arrow-alt-right ml-2"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* TOTAL */}
+          <div className="col-lg-4">
+            <div className="card border-0 rounded-0 p-lg-4 bg-light">
+              <div className="card-body">
+                <h5 className="text-uppercase mb-4">Cart total</h5>
+
+                <ul className="list-unstyled mb-0">
+                  <li className="d-flex align-items-center justify-content-between">
+                    <strong className="text-uppercase small font-weight-bold">
+                      Subtotal
+                    </strong>
+
+                    <span className="text-muted small">
+                      {total.toLocaleString("vi-VN")}đ
+                    </span>
+                  </li>
+
+                  <li className="border-bottom my-2"></li>
+
+                  <li className="d-flex align-items-center justify-content-between mb-4">
+                    <strong className="text-uppercase small font-weight-bold">
+                      Total
+                    </strong>
+
+                    <span>{total.toLocaleString("vi-VN")}đ</span>
+                  </li>
+
+                  <li>
+                    <form onSubmit={(e) => e.preventDefault()}>
+                      <div className="form-group mb-0">
+                        <input
+                          className="form-control"
+                          type="text"
+                          placeholder="Enter your coupon"
+                        />
+
+                        <button
+                          className="btn btn-dark btn-sm btn-block"
+                          type="submit"
+                        >
+                          <i className="fas fa-gift mr-2"></i>
+                          Apply coupon
+                        </button>
+                      </div>
+                    </form>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 export default Cart;

@@ -1,51 +1,58 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React from "react";
+import PropTypes from "prop-types";
 
 IndexPage.propTypes = {
-    indexPage: PropTypes.array,
-    handlerChangePage: PropTypes.func,
-    pagination: PropTypes.object
+  indexPage: PropTypes.array,
+  handlerChangePage: PropTypes.func,
+  pagination: PropTypes.object,
 };
 
 IndexPage.defaultProps = {
-    indexPage: null,
-    handlerChangePage: null,
-    pagination: {}
-}
+  indexPage: [],
+  handlerChangePage: null,
+  pagination: {
+    page: 1,
+  },
+};
 
 function IndexPage(props) {
+  const { indexPage, handlerChangePage, pagination } = props;
 
-    const { indexPage, handlerChangePage, pagination } = props
+  const { page } = pagination;
 
-    const { page } = pagination
 
-    const onIndexPage = (value) => {
-
-        if (!handlerChangePage){
-            return
-        }
-
-        handlerChangePage(value)
-
+  const onIndexPage = (value) => {
+    if (!handlerChangePage) {
+      return;
     }
 
-    console.log(indexPage)
+    handlerChangePage(value);
+  };
 
-    return (
-        <div className="d-flex">
-            {
-                indexPage && indexPage.map(value => (
-                    <li className={value === parseInt(page) ? 'page-item active' : 'page-item'} 
-                        key={value} 
-                        onClick={() => onIndexPage(value)}>
-
-                        <a className="page-link">{value}</a>
-
-                    </li>
-                ))
+  return (
+    <nav aria-label="Product pagination">
+      <ul className="pagination d-flex mb-0">
+        {indexPage.map((value) => (
+          <li
+            className={
+              value === parseInt(page, 10) ? "page-item active" : "page-item"
             }
-        </div>
-    );
+            key={value}
+          >
+            <button
+              type="button"
+              className="page-link"
+              onClick={() => onIndexPage(value)}
+              aria-label={`Go to page ${value}`}
+              aria-current={value === parseInt(page, 10) ? "page" : undefined}
+            >
+              {value}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
 }
 
 export default IndexPage;
