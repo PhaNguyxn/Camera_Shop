@@ -42,8 +42,7 @@ const ChatAI = () => {
     }
 
     try {
-      const query =
-        `?idUser=${idUser}` + `&idProduct=${product._id}` + `&count=1`;
+      const query = `?idUser=${idUser}&idProduct=${product._id}&count=1`;
 
       const response = await CartAPI.postAddToCart(query);
 
