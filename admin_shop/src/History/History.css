@@ -1,0 +1,113 @@
+.order-stat-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 16px;
+
+  margin-bottom: 24px;
+}
+
+.order-stat-card {
+  padding: 20px;
+
+  border-radius: 10px;
+
+  background: #fff;
+
+  box-shadow:
+    0 2px 8px
+    rgba(0, 0, 0, 0.05);
+}
+
+.order-stat-card span {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #777;
+
+  font-size: 14px;
+}
+
+.order-stat-card strong {
+  font-size: 22px;
+
+  color: #222;
+}
+
+.order-toolbar {
+  display: grid;
+
+  grid-template-columns:
+    minmax(250px, 1fr)
+    220px;
+
+  gap: 12px;
+
+  margin-bottom: 20px;
+}
+
+.payment-method-badge {
+  display: inline-block;
+
+  padding: 5px 10px;
+
+  border-radius: 20px;
+
+  background: #eee;
+
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+.payment-select,
+.order-status-select {
+  min-width: 145px;
+
+  height: 36px;
+
+  font-size: 13px;
+}
+
+.payment-paid {
+  border-color: #28a745;
+
+  background: #eaf7ed;
+}
+
+.payment-unpaid {
+  border-color: #dc3545;
+
+  background: #fcebec;
+}
+
+
+@media (max-width: 991px) {
+  .order-stat-grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+}
+
+
+@media (max-width: 767px) {
+  .order-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .order-toolbar select,
+  .order-toolbar input {
+    width: 100%;
+  }
+
+  .table {
+    min-width: 1000px;
+  }
+}

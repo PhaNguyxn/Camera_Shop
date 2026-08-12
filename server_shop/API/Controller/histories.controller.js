@@ -271,3 +271,74 @@ module.exports.updateStatus = async (req, res) => {
     });
   }
 };
+
+module.exports.updateOrder = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const { orderStatus, paymentStatus } = req.body;
+
+    const validOrderStatuses = [
+      "PENDING",
+      "CONFIRMED",
+      "SHIPPING",
+      "DELIVERED",
+      "CANCELLED",
+    ];
+
+    const validPaymentStatuses = ["UNPAID", "PAID"];
+
+    const order = await Histories.findById(id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Không tìm thấy đơn hàng",
+      });
+    }
+
+    if (orderStatus !== undefined) {
+      if (!validOrderStatuses.includes(orderStatus)) {
+        return res.status(400).json({
+          message: "Trạng thái đơn hàng không hợp lệ",
+        });
+      }
+
+      order.orderStatus = orderStatus;
+
+      order.delivery = ["SHIPPING", "DELIVERED"].includes(orderStatus);
+    }
+
+    if (paymentStatus !== undefined) {
+      if (!validPaymentStatuses.includes(paymentStatus)) {
+        return res.status(400).json({
+          message: "Trạng thái thanh toán không hợp lệ",
+        });
+      }
+
+      if (order.paymentMethod === "PAYOS") {
+        return res.status(400).json({
+          message: "Thanh toán PAYOS phải được xác nhận tự động",
+        });
+      }
+
+      order.paymentStatus = paymentStatus;
+
+      order.status = paymentStatus === "PAID";
+
+      order.paidAt = paymentStatus === "PAID" ? new Date() : null;
+    }
+
+    await order.save();
+
+    return res.json({
+      message: "Cập nhật đơn hàng thành công",
+      order,
+    });
+  } catch (error) {
+    console.error("Update order error:", error);
+
+    return res.status(500).json({
+      message: "Có lỗi xảy ra khi cập nhật đơn hàng",
+    });
+  }
+};

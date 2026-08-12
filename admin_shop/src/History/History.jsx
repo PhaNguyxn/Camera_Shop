@@ -1,198 +1,378 @@
-import React, { useEffect, useState } from 'react';
-import HistoryAPI from '../API/HistoryAPI';
-import { useHistory } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from "react";
+
+import { useHistory } from "react-router-dom";
+
+import HistoryAPI from "../API/HistoryAPI";
+
+import "./History.css";
 
 function History() {
+  const historyRouter = useHistory();
 
-    const historyRouter = useHistory();
+  const [orders, setOrders] = useState([]);
 
-    const [history, setHistory] = useState([]);
-    const [temp, setTemp] = useState([]);
-    const [loadingIds, setLoadingIds] = useState([]);
-    
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await HistoryAPI.getAll();
-                setHistory(response);
-                setTemp(response);
-            } catch (error) {
-                console.log(error);
-            }
-        };
+  const [loading, setLoading] = useState(true);
 
-        fetchData();
-    }, []);
+  const [loadingIds, setLoadingIds] = useState([]);
 
-    // 🔍 SEARCH
-    const handleSearch = (e) => {
-        const value = e.target.value.toLowerCase();
+  const [search, setSearch] = useState("");
 
-        if (!value) {
-            setHistory(temp);
-            return;
-        }
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
-        const filterData = temp.filter(item =>
-            item.fullname?.toLowerCase().includes(value) ||
-            item.phone?.toLowerCase().includes(value) ||
-            item.address?.toLowerCase().includes(value)
-        );
 
-        setHistory(filterData);
-    };
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
-    // 👉 VIEW PAGE
-    const handleView = (id) => {
-        historyRouter.push(`/history/view?id=${id}`);
-    };
-
-    // 🕒 FORMAT DATE
-    const formatDate = (date) => {
-        if (!date) return '';
-        return new Date(date).toLocaleString('en-US');
-    };
-
-    const handleUpdateStatus = async (id, value) => {
+  const fetchOrders = async () => {
     try {
-        setLoadingIds(prev => [...prev, id]);
+      setLoading(true);
 
-        await HistoryAPI.updateStatus(id, { 
-            status: value ? 1 : 0   // 🔥 FIX QUAN TRỌNG
-        });
+      const response = await HistoryAPI.getAll();
 
-        const newData = history.map(item =>
-            item._id === id ? { ...item, status: value ? 1 : 0 } : item
-        );
-
-        setHistory(newData);
-        setTemp(newData);
-
+      setOrders(response || []);
     } catch (error) {
-        console.log(error);
+      console.error("Lỗi tải đơn hàng:", error);
     } finally {
-        setLoadingIds(prev => prev.filter(item => item !== id));
+      setLoading(false);
     }
-};
+  };
 
 
-    
-    return (
-        <div className="page-wrapper">
-            <div className="page-breadcrumb">
-                <div className="row">
-                    <div className="col-7 align-self-center">
-                        <h4 className="page-title text-dark font-weight-medium mb-1">
-                            Order History Manage
-                        </h4>
-                    </div>
-                </div>
-            </div>
+  const formatDate = (date) => {
+    if (!date) return "-";
 
-            <div className="container-fluid">
-                <div className="card">
-                    <div className="card-body">
+    return new Date(date).toLocaleString("vi-VN");
+  };
 
-                        <h4 className="card-title">Order List</h4>
-
-                        <input
-                            className="form-control w-25"
-                            type="text"
-                            placeholder="Enter Search!"
-                            onChange={handleSearch}
-                        />
-
-                        <br />
-
-                        <div className="table-responsive">
-                            <table className="table table-striped table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>User ID</th>
-                                        <th>Name</th>
-                                        <th>Phone</th>
-                                        <th>Address</th>
-                                        <th>Total</th>
-                                        <th>Order Date</th>
-                                        <th>Delivery</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {
-                                        history?.map(item => {
-                                            const isLoading = loadingIds.includes(item._id);
-                                            const statusBool = item.status === 1 || item.status === true;
-                                            return (
-                                                <tr key={item._id}>
-                                                    <td>{item.idUser}</td>
-                                                    <td>{item.fullname}</td>
-                                                    <td>{item.phone}</td>
-                                                    <td>{item.address}</td>
-                                                    <td>{item.total}</td>
-                                                    <td>{formatDate(item.createdAt)}</td>
-                                                    <td>
-                                                        {item.delivery ? 'Đã Vận Chuyển' : 'Chưa Vận Chuyển'}
-                                                    </td>
-
-                                                    {/* ✅ SELECT STATUS */}
-                                                    <td>
-                                                        <select
-    value={String(statusBool)}
-    disabled={isLoading}
-    onChange={(e) =>
-        handleUpdateStatus(item._id, e.target.value === "true")
+  const normalizeMoney = (value) => {
+    if (typeof value === "number") {
+      return value;
     }
-    style={{
-        padding: '4px 8px',
-            borderRadius: '20px',
-            border: '1px solid #ccc',
-            backgroundColor: (item.status === 1 || item.status === true) ? '#d4edda' : '#f8d7da',
-            color: (item.status === 1 || item.status === true) ? '#155724' : '#721c24',
-            fontWeight: '500',
-            fontSize: '13px',
-            width: '140px',        
-            height: '32px',
-            outline: 'none',
-            cursor: isLoading ? 'not-allowed' : 'pointer'
-    }}
->
-    <option value="false">Chưa Thanh Toán</option>
-    <option value="true">Đã Thanh Toán</option>
-</select>
 
-                                                        {isLoading && (
-                                                            <div style={{ fontSize: '12px', color: '#999' }}>
-                                                                Đang cập nhật...
-                                                            </div>
-                                                        )}
-                                                    </td>
+    return Number(String(value || "").replace(/[^\d]/g, "")) || 0;
+  };
 
-                                                    <td>
-                                                        <a
-    href={`/history/view?id=${item._id}`}
-    style={{ cursor: 'pointer', color: 'white' }}
-    className="btn btn-success"
->
-    View
-</a>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    }
-                                </tbody>
+  const formatMoney = (value) => {
+    return `${normalizeMoney(value).toLocaleString("vi-VN")} ₫`;
+  };
 
-                            </table>
-                        </div>
 
-                    </div>
-                </div>
-            </div>
-        </div>
+  const getPaymentStatus = (order) => {
+    if (order.paymentStatus) {
+      return order.paymentStatus;
+    }
+
+    return order.status ? "PAID" : "UNPAID";
+  };
+
+  const getOrderStatus = (order) => {
+    if (order.orderStatus) {
+      return order.orderStatus;
+    }
+
+    return order.delivery ? "SHIPPING" : "PENDING";
+  };
+
+  const getPaymentMethod = (order) => {
+    return order.paymentMethod || "COD";
+  };
+
+
+  const handleUpdateOrder = async (id, data) => {
+    try {
+      setLoadingIds((prev) => [...prev, id]);
+
+      const response = await HistoryAPI.updateOrder(id, data);
+
+      const updatedOrder = response.order || response;
+
+      setOrders((prev) =>
+        prev.map((item) =>
+          item._id === id
+            ? {
+                ...item,
+                ...updatedOrder,
+              }
+            : item,
+        ),
+      );
+    } catch (error) {
+      console.error("Update order error:", error);
+
+      alert(error?.response?.data?.message || "Không thể cập nhật đơn hàng");
+    } finally {
+      setLoadingIds((prev) => prev.filter((item) => item !== id));
+    }
+  };
+
+
+  const filteredOrders = useMemo(() => {
+    const keyword = search.toLowerCase().trim();
+
+    return orders.filter((order) => {
+      const matchSearch =
+        !keyword ||
+        order.fullname?.toLowerCase().includes(keyword) ||
+        order.phone?.toLowerCase().includes(keyword) ||
+        order.email?.toLowerCase().includes(keyword) ||
+        order.address?.toLowerCase().includes(keyword) ||
+        String(order.orderCode || "").includes(keyword) ||
+        order._id?.toLowerCase().includes(keyword);
+
+      const matchStatus =
+        statusFilter === "ALL" || getOrderStatus(order) === statusFilter;
+
+      return matchSearch && matchStatus;
+    });
+  }, [orders, search, statusFilter]);
+
+
+  const totalOrders = orders.length;
+
+  const pendingOrders = orders.filter(
+    (order) => getOrderStatus(order) === "PENDING",
+  ).length;
+
+  const shippingOrders = orders.filter(
+    (order) => getOrderStatus(order) === "SHIPPING",
+  ).length;
+
+  const revenue = orders
+    .filter((order) => getPaymentStatus(order) === "PAID")
+    .reduce(
+      (sum, order) => sum + normalizeMoney(order.totalAmount ?? order.total),
+      0,
     );
+
+
+  const orderStatusText = {
+    PENDING: "Chờ xác nhận",
+    CONFIRMED: "Đã xác nhận",
+    SHIPPING: "Đang giao",
+    DELIVERED: "Đã giao",
+    CANCELLED: "Đã hủy",
+  };
+
+  if (loading) {
+    return (
+      <div className="page-wrapper">
+        <div className="container-fluid">Đang tải đơn hàng...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-wrapper">
+      <div className="page-breadcrumb">
+        <div className="row">
+          <div className="col-12">
+            <h4 className="page-title text-dark font-weight-medium mb-1">
+              Quản lý đơn hàng
+            </h4>
+
+            <p className="text-muted">
+              Theo dõi và cập nhật trạng thái đơn hàng.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="container-fluid">
+
+        <div className="order-stat-grid">
+          <div className="order-stat-card">
+            <span>Tổng đơn hàng</span>
+
+            <strong>{totalOrders}</strong>
+          </div>
+
+          <div className="order-stat-card">
+            <span>Chờ xác nhận</span>
+
+            <strong>{pendingOrders}</strong>
+          </div>
+
+          <div className="order-stat-card">
+            <span>Đang giao</span>
+
+            <strong>{shippingOrders}</strong>
+          </div>
+
+          <div className="order-stat-card">
+            <span>Doanh thu đã thanh toán</span>
+
+            <strong>{formatMoney(revenue)}</strong>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-body">
+
+            <div className="order-toolbar">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Tìm mã đơn, khách hàng, SĐT..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+
+              <select
+                className="form-control"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+
+                <option value="PENDING">Chờ xác nhận</option>
+
+                <option value="CONFIRMED">Đã xác nhận</option>
+
+                <option value="SHIPPING">Đang giao</option>
+
+                <option value="DELIVERED">Đã giao</option>
+
+                <option value="CANCELLED">Đã hủy</option>
+              </select>
+            </div>
+
+
+            <div className="table-responsive">
+              <table className="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>Mã đơn</th>
+
+                    <th>Khách hàng</th>
+
+                    <th>Tổng tiền</th>
+
+                    <th>Phương thức</th>
+
+                    <th>Thanh toán</th>
+
+                    <th>Trạng thái đơn</th>
+
+                    <th>Ngày đặt</th>
+
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredOrders.map((order) => {
+                    const isLoading = loadingIds.includes(order._id);
+
+                    const paymentMethod = getPaymentMethod(order);
+
+                    const paymentStatus = getPaymentStatus(order);
+
+                    const orderStatus = getOrderStatus(order);
+
+                    return (
+                      <tr key={order._id}>
+                        <td>
+                          <strong>
+                            #{order.orderCode || order._id.slice(-6)}
+                          </strong>
+                        </td>
+
+                        <td>
+                          <div>
+                            <strong>{order.fullname}</strong>
+                          </div>
+
+                          <small className="text-muted">{order.phone}</small>
+                        </td>
+
+                        <td>
+                          <strong>
+                            {formatMoney(order.totalAmount ?? order.total)}
+                          </strong>
+                        </td>
+
+                        <td>
+                          <span className="payment-method-badge">
+                            {paymentMethod === "PAYOS" ? "QR / payOS" : "COD"}
+                          </span>
+                        </td>
+
+                        <td>
+                          <select
+                            value={paymentStatus}
+                            className={`form-control payment-select ${
+                              paymentStatus === "PAID"
+                                ? "payment-paid"
+                                : "payment-unpaid"
+                            }`}
+                            disabled={isLoading || paymentMethod === "PAYOS"}
+                            onChange={(e) =>
+                              handleUpdateOrder(order._id, {
+                                paymentStatus: e.target.value,
+                              })
+                            }
+                          >
+                            <option value="UNPAID">Chưa thanh toán</option>
+
+                            <option value="PAID">Đã thanh toán</option>
+                          </select>
+                        </td>
+
+                        <td>
+                          <select
+                            className="form-control order-status-select"
+                            value={orderStatus}
+                            disabled={isLoading}
+                            onChange={(e) =>
+                              handleUpdateOrder(order._id, {
+                                orderStatus: e.target.value,
+                              })
+                            }
+                          >
+                            {Object.entries(orderStatusText).map(
+                              ([value, label]) => (
+                                <option value={value} key={value}>
+                                  {label}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </td>
+
+                        <td>{formatDate(order.createdAt)}</td>
+
+                        <td>
+                          <button
+                            className="btn btn-dark btn-sm"
+                            onClick={() =>
+                              historyRouter.push(
+                                `/history/view?id=${order._id}`,
+                              )
+                            }
+                          >
+                            Chi tiết
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {!filteredOrders.length && (
+                    <tr>
+                      <td colSpan="8" className="text-center py-4 text-muted">
+                        Không tìm thấy đơn hàng.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default History;

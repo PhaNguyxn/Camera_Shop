@@ -3,23 +3,27 @@ import axiosClient from './axiosClient'
 const HistoryAPI = {
 
     getHistoryAPI: (query) => {
-        const url = `/histories${query}`
-        return axiosClient.get(url)
+        return axiosClient.get(`/histories${query}`);
     },
 
     getDetail: (id) => {
-        const url = `/histories/${id}`
-        return axiosClient.get(url)
+        return axiosClient.get(`/histories/${id}`);
     },
 
     getAll: () => {
-        const url = '/histories/all'
-        return axiosClient.get(url)
+        return axiosClient.get("/histories/all");
     },
 
     updateStatus: (id, data) => {
     return axiosClient.put(`/histories/update-status/${id}`, data);
-    }
+    },
+
+    updateOrder: (id, data) => {
+    return axiosClient.put(
+      `/histories/update-order/${id}`,
+      data
+    );
+  }
 
 }
 

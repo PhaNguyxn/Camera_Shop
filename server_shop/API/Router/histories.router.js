@@ -4,17 +4,16 @@ var router = express.Router()
 
 const Histories = require('../Controller/histories.controller')
 
-//Get Find Carts For User
 router.get('/', Histories.index)
 
-// Get All History
 router.get('/all', Histories.history)
 
-//Get Detail History
 router.get('/:id', Histories.detail)
 
 router.post('/', Histories.postHistory)
 
 router.put('/update-status/:id', Histories.updateStatus)
+
+router.put("/update-order/:id", Histories.updateOrder)
 
 module.exports = router
