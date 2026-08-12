@@ -1,154 +1,150 @@
 import React from "react";
 
+import { Link } from "react-router-dom";
+
+import "./Footer.css";
+
 function Footer() {
   return (
-    <footer className="bg-dark text-white">
-      <div className="container py-4">
-        <div className="row py-5">
+    <footer className="camera-footer">
+      <div className="shop-container">
+        <div className="camera-footer-main">
 
-          <div className="col-md-4 mb-3 mb-md-0">
-            <h6 className="text-uppercase mb-3">Customer services</h6>
+          <div className="camera-footer-brand">
+            <Link to="/" className="camera-footer-logo">
+              <span className="camera-footer-logo-icon">
+                <i className="fas fa-camera" />
+              </span>
 
-            <ul className="list-unstyled mb-0">
+              <span>
+                CAMERA
+                <strong>SHOP</strong>
+              </span>
+            </Link>
+
+            <p>
+              Discover cameras and photography gear for creators, travelers and
+              professionals.
+            </p>
+
+            <div className="camera-footer-socials">
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Facebook"
+              >
+                <i className="fab fa-facebook-f" />
+              </a>
+
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram"
+              >
+                <i className="fab fa-instagram" />
+              </a>
+
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="YouTube"
+              >
+                <i className="fab fa-youtube" />
+              </a>
+            </div>
+          </div>
+
+          <div className="camera-footer-column">
+            <h4>Shop</h4>
+
+            <ul>
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  Help &amp; Contact Us
-                </button>
+                <Link to="/">Home</Link>
               </li>
 
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  Returns &amp; Refunds
-                </button>
+                <Link to="/shop">Cameras</Link>
               </li>
 
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  Online Stores
-                </button>
+                <Link to="/cart">Shopping Cart</Link>
               </li>
 
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  Terms &amp; Conditions
-                </button>
+                <Link to="/history">My Orders</Link>
               </li>
             </ul>
           </div>
 
 
-          <div className="col-md-4 mb-3 mb-md-0">
-            <h6 className="text-uppercase mb-3">Company</h6>
+          <div className="camera-footer-column">
+            <h4>Customer Care</h4>
 
-            <ul className="list-unstyled mb-0">
+            <ul className="camera-footer-info-list">
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  What We Do
-                </button>
+                <i className="fas fa-shipping-fast" />
+                Fast Delivery
               </li>
 
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  Available Services
-                </button>
+                <i className="fas fa-shield-alt" />
+                Genuine Products
               </li>
 
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  Latest Posts
-                </button>
+                <i className="fas fa-lock" />
+                Secure Shopping
               </li>
 
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  FAQs
-                </button>
+                <i className="fas fa-headset" />
+                Customer Support
               </li>
             </ul>
           </div>
 
 
-          <div className="col-md-4">
-            <h6 className="text-uppercase mb-3">Social media</h6>
+          <div className="camera-footer-column">
+            <h4>Contact</h4>
 
-            <ul className="list-unstyled mb-0">
+            <ul className="camera-footer-contact">
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  Twitter
-                </button>
+                <i className="fas fa-map-marker-alt" />
+
+                <span>Can Tho, Vietnam</span>
               </li>
 
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  Instagram
-                </button>
+                <i className="fas fa-phone-alt" />
+
+                <a href="tel:+84123456789">+84 123 456 789</a>
               </li>
 
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  Tumblr
-                </button>
+                <i className="fas fa-envelope" />
+
+                <a href="mailto:support@camerashop.com">
+                  support@camerashop.com
+                </a>
               </li>
 
               <li>
-                <button
-                  type="button"
-                  className="footer-link border-0 bg-transparent p-0"
-                >
-                  Pinterest
-                </button>
+                <i className="fas fa-clock" />
+
+                <span>Mon - Sat: 8:00 AM - 6:00 PM</span>
               </li>
             </ul>
           </div>
         </div>
 
 
-        <div
-          className="border-top pt-4"
-          style={{
-            borderColor: "#1d1d1d",
-          }}
-        >
-          <div className="row">
-            <div className="col-lg-6">
-              <p className="small text-muted mb-0">
-                &copy; 2026 All rights reserved.
-              </p>
-            </div>
-          </div>
+        <div className="camera-footer-bottom">
+          <p>© 2026 Camera Shop. All rights reserved.</p>
+
+          <p>Made for photographers and creators.</p>
         </div>
       </div>
     </footer>

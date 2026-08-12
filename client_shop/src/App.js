@@ -1,6 +1,7 @@
 import './App.css';
 import './css/custom.css'
 import './css/style.default.css'
+import "./css/theme.css";
 import ChatAI from "./ChatboxAI/ChatAI";
 
 import { BrowserRouter, Route, Switch } from "react-router-dom";
@@ -32,10 +33,9 @@ function App() {
           <Route path="/history" component={History} />
           <Route path="/shop" component={Shop} />
         </Switch>
+        <Footer />
         <ChatAI />
       </BrowserRouter>
-      
-      <Footer />
     </div>
   );
 }

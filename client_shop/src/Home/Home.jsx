@@ -3,14 +3,29 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import ProductAPI from "../API/ProductAPI";
+
 import Image from "../Share/img/Image";
+
+import "./Home.css";
 
 function Home() {
   const [products, setProducts] = useState([]);
 
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+  const [subscribeEmail, setSubscribeEmail] = useState("");
+
+  const [subscribeMessage, setSubscribeMessage] = useState("");
+
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProducts = async () => {
       try {
+        setLoading(true);
+
+        setError("");
+
         const response = await ProductAPI.getAPI();
 
         const productList = Array.isArray(response) ? response.slice(0, 8) : [];
@@ -20,98 +35,152 @@ function Home() {
         console.error("Load home products error:", error);
 
         setProducts([]);
+
+        setError("Unable to load products at the moment.");
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchData();
+    fetchProducts();
   }, []);
 
   const handleSubscribe = (e) => {
     e.preventDefault();
+
+    const email = subscribeEmail.trim();
+
+    if (!email) {
+      setSubscribeMessage("Please enter your email address.");
+
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      setSubscribeMessage("Please enter a valid email address.");
+
+      return;
+    }
+
+    setSubscribeMessage("Thanks for subscribing!");
+
+    setSubscribeEmail("");
   };
 
+  const categories = [
+    {
+      id: 1,
+      title: "Mirrorless",
+      subtitle: "Explore",
+      image: Image.img1,
+    },
+
+    {
+      id: 2,
+      title: "Film Camera",
+      subtitle: "Classic photography",
+      image: Image.img2,
+    },
+
+    {
+      id: 3,
+      title: "Action Camera",
+      subtitle: "Capture adventures",
+      image: Image.img4,
+    },
+
+    {
+      id: 4,
+      title: "Compact",
+      subtitle: "Travel light",
+      image: Image.img3,
+    },
+
+    {
+      id: 5,
+      title: "DSLR",
+      subtitle: "Professional gear",
+      image: Image.img5,
+    },
+  ];
+
   return (
-    <div className="page-holder">
-      <header className="header bg-white">
+    <main className="home-page">
 
 
-        {products.map((value) => (
+      {products.map((product) => (
+        <div
+          className="modal fade"
+          id={`product_${product._id}`}
+          tabIndex="-1"
+          role="dialog"
+          aria-hidden="true"
+          key={`modal-${product._id}`}
+        >
           <div
-            className="modal fade"
-            id={`product_${value._id}`}
-            tabIndex="-1"
-            role="dialog"
-            aria-hidden="true"
-            key={`modal-${value._id}`}
+            className="modal-dialog modal-lg modal-dialog-centered"
+            role="document"
           >
-            <div
-              className="modal-dialog modal-lg modal-dialog-centered"
-              role="document"
-            >
-              <div className="modal-content">
-                <div className="modal-body p-0">
-                  <div className="row align-items-stretch">
+            <div className="modal-content home-product-modal">
+              <div className="modal-body p-0">
+                <div className="row no-gutters align-items-stretch">
 
-                    <div className="col-lg-6 p-lg-0">
+                  <div className="col-lg-6">
+                    <div className="home-modal-image">
                       <img
-                        style={{
-                          width: "100%",
-                        }}
-                        className="product-view d-block h-100 bg-cover bg-center"
-                        src={value.img1}
-                        alt={value.name || "Product"}
+                        src={product.img1}
+                        alt={product.name || "Camera product"}
                       />
                     </div>
+                  </div>
 
+                  <div className="col-lg-6">
+                    <button
+                      type="button"
+                      className="close home-modal-close"
+                      data-dismiss="modal"
+                      aria-label="Close"
+                    >
+                      <span aria-hidden="true">×</span>
+                    </button>
 
-                    <div className="col-lg-6">
+                    <div className="home-modal-content">
+                      <div className="home-modal-rating">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <i className="fas fa-star" key={star} />
+                        ))}
+                      </div>
 
-                      <button
-                        type="button"
-                        className="close p-4"
-                        data-dismiss="modal"
-                        aria-label="Close"
-                      >
-                        <span aria-hidden="true">×</span>
-                      </button>
+                      <span className="home-modal-label">Featured camera</span>
 
-                      <div className="p-5 my-md-4">
+                      <h2>{product.name}</h2>
 
-                        <ul className="list-inline mb-2">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <li className="list-inline-item m-0" key={star}>
-                              <i className="fas fa-star small text-warning"></i>
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="home-modal-price">{product.price}</div>
 
-                        <h2 className="h4">{value.name}</h2>
+                      <p className="home-modal-description">
+                        {product.description ||
+                          "Discover this camera and explore its features, specifications and performance."}
+                      </p>
 
-                        <p className="text-muted">{value.price}</p>
-
-                        <p className="text-small mb-4">
-                          {value.description || "No description available."}
-                        </p>
-
-                        <div className="row align-items-stretch mb-4">
-                          <div className="col-sm-5 pl-sm-0 fix_addwish">
-                            <button
-                              type="button"
-                              className="btn btn-dark btn-sm btn-block h-100 d-flex align-items-center justify-content-center px-0"
-                            >
-                              <i className="far fa-heart mr-2"></i>
-                              Add To Wish List
-                            </button>
-                          </div>
-                        </div>
-
+                      <div className="home-modal-actions">
                         <Link
-                          to={`/detail/${value._id}`}
-                          className="btn btn-outline-dark btn-sm"
+                          to={`/detail/${product._id}`}
+                          className="shop-btn shop-btn-primary"
                           data-dismiss="modal"
                         >
-                          View Detail
+                          View Product
+                          <i className="fas fa-arrow-right ml-2" />
                         </Link>
+
+                        <button
+                          type="button"
+                          className="home-modal-wishlist"
+                          aria-label="Add to wishlist"
+                        >
+                          <i className="far fa-heart" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -119,303 +188,363 @@ function Home() {
               </div>
             </div>
           </div>
-        ))}
+        </div>
+      ))}
 
-        <div className="container">
+      <section
+        className="camera-hero"
+        style={{
+          backgroundImage: `url(${Image.banner})`,
+        }}
+      >
+        <div className="camera-hero-overlay" />
 
-          <section
-            className="hero pb-3 bg-cover bg-center d-flex align-items-center"
-            style={{
-              backgroundImage: `url(${Image.banner})`,
-            }}
-          >
-            <div className="container py-5">
-              <div className="row px-4 px-lg-5">
-                <div className="col-lg-6">
-                  <p className="text-muted small text-uppercase mb-2">
-                    New Inspiration 2026
-                  </p>
+        <div className="shop-container camera-hero-inner">
+          <div className="camera-hero-content">
+            <span className="camera-hero-eyebrow">
+              Professional Photography Gear
+            </span>
 
-                  <h1 className="h2 text-uppercase mb-3">
-                    20% off on new season
-                  </h1>
+            <h1>
+              Capture Every
+              <span> Moment.</span>
+            </h1>
 
-                  <Link className="btn btn-dark" to="/shop">
-                    Buy Now!
-                  </Link>
-                </div>
-              </div>
+            <p>
+              Discover cameras and photography gear designed for creators,
+              travelers and professionals.
+            </p>
+
+            <div className="camera-hero-actions">
+              <Link to="/shop" className="shop-btn shop-btn-primary">
+                Shop Cameras
+                <i className="fas fa-arrow-right ml-2" />
+              </Link>
+
+              <a href="#categories" className="shop-btn shop-btn-outline">
+                Explore Collections
+              </a>
             </div>
-          </section>
 
-          <section className="pt-5">
-            <header className="text-center">
-              <p className="small text-muted text-uppercase mb-1">
-                Carefully created collections
+            <div className="camera-hero-features">
+              <span>
+                <i className="fas fa-check" />
+                Genuine products
+              </span>
+
+              <span>
+                <i className="fas fa-check" />
+                Secure shopping
+              </span>
+
+              <span>
+                <i className="fas fa-check" />
+                Expert support
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="shop-section home-category-section" id="categories">
+        <div className="shop-container">
+          <div className="home-section-heading">
+            <div>
+              <div className="section-eyebrow">Find your perfect camera</div>
+
+              <h2 className="section-title">Shop by category</h2>
+
+              <p className="section-description">
+                Explore cameras designed for every shooting style, from everyday
+                photography to professional work.
               </p>
-
-              <h2 className="h5 text-uppercase mb-4">Browse our categories</h2>
-            </header>
-
-            <div className="row">
-
-              <div className="col-md-4 mb-4">
-                <Link className="category-item" to="/shop">
-                  <img
-                    className="img-fluid"
-                    src={Image.img1}
-                    alt="Mirrorless cameras"
-                  />
-
-                  <strong className="category-item-title">Mirrorless</strong>
-                </Link>
-              </div>
-
-
-              <div className="col-md-4 mb-4">
-                <Link className="category-item" to="/shop">
-                  <img
-                    className="img-fluid"
-                    src={Image.img2}
-                    alt="Film cameras"
-                  />
-
-                  <strong className="category-item-title">Film</strong>
-                </Link>
-              </div>
-
-
-              <div className="col-md-4 mb-4">
-                <Link className="category-item" to="/shop">
-                  <img
-                    className="img-fluid"
-                    src={Image.img4}
-                    alt="Action cameras"
-                  />
-
-                  <strong className="category-item-title">Action</strong>
-                </Link>
-              </div>
-
-
-              <div className="col-md-6 mb-4">
-                <Link className="category-item" to="/shop">
-                  <img
-                    className="img-fluid"
-                    src={Image.img3}
-                    alt="Compact cameras"
-                  />
-
-                  <strong className="category-item-title">Compact</strong>
-                </Link>
-              </div>
-
-
-              <div className="col-md-6 mb-4">
-                <Link className="category-item" to="/shop">
-                  <img
-                    className="img-fluid"
-                    src={Image.img5}
-                    alt="DSLR cameras"
-                  />
-
-                  <strong className="category-item-title">DSLR</strong>
-                </Link>
-              </div>
             </div>
-          </section>
 
-          <section className="py-5" id="section_product">
-            <header>
-              <p className="small text-muted text-uppercase mb-1">
-                Made the hard way
+            <Link to="/shop" className="home-view-all">
+              View all products
+              <i className="fas fa-arrow-right" />
+            </Link>
+          </div>
+
+          <div className="row">
+            {categories.map((category, index) => (
+              <div
+                className={
+                  index < 3
+                    ? "col-lg-4 col-md-6 mb-4"
+                    : "col-lg-6 col-md-6 mb-4"
+                }
+                key={category.id}
+              >
+                <Link className="camera-category-card" to="/shop">
+                  <img src={category.image} alt={`${category.title} cameras`} />
+
+                  <div className="camera-category-overlay" />
+
+                  <div className="camera-category-content">
+                    <span>{category.subtitle}</span>
+
+                    <h3>{category.title}</h3>
+
+                    <div>
+                      Shop now
+                      <i className="fas fa-arrow-right ml-2" />
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+      <section className="shop-section home-products-section">
+        <div className="shop-container">
+          <div className="home-section-heading">
+            <div>
+              <div className="section-eyebrow">Customer favorites</div>
+
+              <h2 className="section-title">Trending cameras</h2>
+
+              <p className="section-description">
+                Explore the cameras our customers are choosing for everyday
+                moments and professional work.
               </p>
+            </div>
 
-              <h2 className="h5 text-uppercase mb-4">Top trending products</h2>
-            </header>
+            <Link to="/shop" className="home-view-all">
+              Shop all
+              <i className="fas fa-arrow-right" />
+            </Link>
+          </div>
 
+
+          {loading && (
+            <div className="home-products-loading">
+              <div className="home-products-spinner" />
+
+              <p>Loading products...</p>
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="home-products-empty">
+              <i className="fas fa-exclamation-circle" />
+
+              <h4>Products unavailable</h4>
+
+              <p>{error}</p>
+            </div>
+          )}
+
+
+          {!loading && !error && products.length > 0 && (
             <div className="row">
-              {products.length > 0 ? (
-                products.map((value) => (
-                  <div className="col-xl-3 col-lg-4 col-sm-6" key={value._id}>
-                    <div className="product text-center">
-                      <div className="position-relative mb-3">
-                        <div className="badge text-white"></div>
+              {products.map((product) => (
+                <div
+                  className="col-xl-3 col-lg-4 col-sm-6 mb-4"
+                  key={product._id}
+                >
+                  <article className="camera-product-card">
 
-                        <Link className="d-block" to={`/detail/${value._id}`}>
-                          <img
-                            className="img-fluid w-100"
-                            src={value.img1}
-                            alt={value.name || "Product"}
-                          />
-                        </Link>
+                    <div className="camera-product-image">
+                      <Link to={`/detail/${product._id}`}>
+                        <img
+                          src={product.img1}
+                          alt={product.name || "Camera"}
+                        />
+                      </Link>
 
-                        <div className="product-overlay">
-                          <ul className="mb-0 list-inline">
+                      <span className="camera-product-badge">Popular</span>
 
-                            <li className="list-inline-item m-0 p-0">
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-dark"
-                                aria-label={`Add ${value.name || "product"} to wishlist`}
-                              >
-                                <i className="far fa-heart"></i>
-                              </button>
-                            </li>
-
-                            <li className="list-inline-item m-0 p-0">
-                              <Link
-                                className="btn btn-sm btn-dark"
-                                to={`/detail/${value._id}`}
-                              >
-                                Add to cart
-                              </Link>
-                            </li>
-
-
-                            <li className="list-inline-item mr-0">
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-dark"
-                                data-toggle="modal"
-                                data-target={`#product_${value._id}`}
-                                aria-label={`Quick view ${value.name || "product"}`}
-                              >
-                                <i className="fas fa-expand"></i>
-                              </button>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-
-
-                      <h6>
-                        <Link
-                          className="reset-anchor"
-                          to={`/detail/${value._id}`}
-                        >
-                          {value.name}
-                        </Link>
-                      </h6>
-
-                      <p className="small text-muted">{value.price}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="col-12">
-                  <p className="text-center text-muted">
-                    No products available.
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-
-
-          <section className="py-5 bg-light">
-            <div className="container">
-              <div className="row text-center">
-
-                <div className="col-lg-4 mb-3 mb-lg-0">
-                  <div className="d-inline-block">
-                    <div className="media align-items-end">
-                      <svg className="svg-icon svg-icon-big svg-icon-light">
-                        <use xlinkHref="#delivery-time-1"></use>
-                      </svg>
-
-                      <div className="media-body text-left ml-3">
-                        <h6 className="text-uppercase mb-1">Free shipping</h6>
-
-                        <p className="text-small mb-0 text-muted">
-                          Free shipping worldwide
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-lg-4 mb-3 mb-lg-0">
-                  <div className="d-inline-block">
-                    <div className="media align-items-end">
-                      <svg className="svg-icon svg-icon-big svg-icon-light">
-                        <use xlinkHref="#helpline-24h-1"></use>
-                      </svg>
-
-                      <div className="media-body text-left ml-3">
-                        <h6 className="text-uppercase mb-1">24 x 7 service</h6>
-
-                        <p className="text-small mb-0 text-muted">
-                          Customer support 24/7
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-
-                <div className="col-lg-4">
-                  <div className="d-inline-block">
-                    <div className="media align-items-end">
-                      <svg className="svg-icon svg-icon-big svg-icon-light">
-                        <use xlinkHref="#label-tag-1"></use>
-                      </svg>
-
-                      <div className="media-body text-left ml-3">
-                        <h6 className="text-uppercase mb-1">Festival offer</h6>
-
-                        <p className="text-small mb-0 text-muted">
-                          Special seasonal offers
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-
-          <section className="py-5">
-            <div className="container p-0">
-              <div className="row">
-                <div className="col-lg-6 mb-3 mb-lg-0">
-                  <h5 className="text-uppercase">Let's be friends!</h5>
-
-                  <p className="text-small text-muted mb-0">
-                    Subscribe to receive our latest news and offers.
-                  </p>
-                </div>
-
-                <div className="col-lg-6">
-                  <form onSubmit={handleSubscribe}>
-                    <div className="input-group flex-column flex-sm-row mb-3">
-                      <input
-                        className="form-control form-control-lg py-3"
-                        type="email"
-                        placeholder="Enter your email address"
-                        aria-label="Email address"
-                        aria-describedby="button-addon2"
-                      />
-
-                      <div className="input-group-append">
+                      <div className="camera-product-actions">
                         <button
-                          className="btn btn-dark btn-block"
-                          id="button-addon2"
-                          type="submit"
+                          type="button"
+                          aria-label={`Add ${
+                            product.name || "product"
+                          } to wishlist`}
                         >
-                          Subscribe
+                          <i className="far fa-heart" />
+                        </button>
+
+                        <button
+                          type="button"
+                          data-toggle="modal"
+                          data-target={`#product_${product._id}`}
+                          aria-label={`Quick view ${product.name || "product"}`}
+                        >
+                          <i className="fas fa-expand" />
                         </button>
                       </div>
                     </div>
-                  </form>
+
+
+                    <div className="camera-product-info">
+                      <div className="camera-product-rating">
+                        <i className="fas fa-star" />
+                        <i className="fas fa-star" />
+                        <i className="fas fa-star" />
+                        <i className="fas fa-star" />
+                        <i className="fas fa-star" />
+                      </div>
+
+                      <Link
+                        to={`/detail/${product._id}`}
+                        className="camera-product-name"
+                      >
+                        {product.name}
+                      </Link>
+
+                      <div className="camera-product-bottom">
+                        <span className="camera-product-price">
+                          {product.price}
+                        </span>
+
+                        <Link
+                          to={`/detail/${product._id}`}
+                          className="camera-product-cart"
+                          aria-label={`View ${product.name || "product"}`}
+                        >
+                          <i className="fas fa-arrow-right" />
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
                 </div>
+              ))}
+            </div>
+          )}
+
+
+          {!loading && !error && products.length === 0 && (
+            <div className="home-products-empty">
+              <i className="fas fa-camera" />
+
+              <h4>No products available</h4>
+
+              <p>New products will appear here soon.</p>
+
+              <Link to="/shop" className="shop-btn shop-btn-primary">
+                Browse Shop
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="home-promo-section">
+        <div className="shop-container">
+          <div className="home-promo">
+            <div className="home-promo-content">
+              <span className="section-eyebrow">Find the right gear</span>
+
+              <h2>Built for every creative journey.</h2>
+
+              <p>
+                Whether you are starting photography or upgrading your
+                professional setup, find the gear that matches your vision.
+              </p>
+
+              <Link to="/shop" className="shop-btn home-promo-button">
+                Explore Cameras
+                <i className="fas fa-arrow-right ml-2" />
+              </Link>
+            </div>
+
+            <div className="home-promo-decoration">
+              <i className="fas fa-camera-retro" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-benefits">
+        <div className="shop-container">
+          <div className="home-benefit-grid">
+
+            <div className="home-benefit">
+              <div className="home-benefit-icon">
+                <i className="fas fa-shipping-fast" />
+              </div>
+
+              <div>
+                <h4>Fast delivery</h4>
+
+                <p>Reliable delivery for every order.</p>
               </div>
             </div>
-          </section>
+
+            <div className="home-benefit">
+              <div className="home-benefit-icon">
+                <i className="fas fa-shield-alt" />
+              </div>
+
+              <div>
+                <h4>Genuine products</h4>
+
+                <p>Carefully selected camera equipment.</p>
+              </div>
+            </div>
+
+
+            <div className="home-benefit">
+              <div className="home-benefit-icon">
+                <i className="fas fa-headset" />
+              </div>
+
+              <div>
+                <h4>Expert support</h4>
+
+                <p>Get help choosing the right camera.</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </header>
-    </div>
+      </section>
+
+
+      <section className="shop-section home-newsletter-section">
+        <div className="shop-container">
+          <div className="home-newsletter">
+            <div className="home-newsletter-content">
+              <span className="section-eyebrow">Stay inspired</span>
+
+              <h2>Join our camera community.</h2>
+
+              <p>
+                Subscribe for product updates, photography tips and exclusive
+                offers.
+              </p>
+            </div>
+
+            <div className="home-newsletter-form-wrapper">
+              <form className="home-newsletter-form" onSubmit={handleSubscribe}>
+                <div className="home-newsletter-input">
+                  <i className="far fa-envelope" />
+
+                  <input
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={subscribeEmail}
+                    onChange={(e) => setSubscribeEmail(e.target.value)}
+                    aria-label="Email address"
+                  />
+                </div>
+
+                <button type="submit" className="shop-btn shop-btn-primary">
+                  Subscribe
+                </button>
+              </form>
+
+              {subscribeMessage && (
+                <p className="home-subscribe-message">{subscribeMessage}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
 

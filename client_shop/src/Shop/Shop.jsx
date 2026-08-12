@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 
+import { Link } from "react-router-dom";
+
 import queryString from "query-string";
 
 import ProductAPI from "../API/ProductAPI";
@@ -8,6 +10,7 @@ import Search from "./Component/Search";
 import Pagination from "./Component/Pagination";
 import Products from "./Component/Products";
 
+import "./Shop.css";
 
 const parsePrice = (price) => {
   if (price === null || price === undefined) {
@@ -19,13 +22,14 @@ const parsePrice = (price) => {
   return Number(cleanPrice);
 };
 
-
 const sortProducts = (list, sortType) => {
   const sorted = [...list];
 
   if (sortType === "low") {
     sorted.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
-  } else if (sortType === "high") {
+  }
+
+  if (sortType === "high") {
     sorted.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
   }
 
@@ -44,36 +48,64 @@ function Shop() {
 
   const [totalPage, setTotalPage] = useState(1);
 
+  const [totalProducts, setTotalProducts] = useState(0);
+
+  const [activeCategory, setActiveCategory] = useState("all");
+
+  const [categories, setCategories] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+  const [filterOpen, setFilterOpen] = useState(false);
+
   const [pagination, setPagination] = useState({
     page: "1",
     count: "9",
     category: "all",
   });
 
-  const [activeCategory, setActiveCategory] = useState("all");
-
-  const [categories, setCategories] = useState([]);
 
   const handlerChangePage = (value) => {
+    const page = Number(value);
+
+    if (page < 1 || page > totalPage) {
+      return;
+    }
+
     setPagination((prev) => ({
       ...prev,
-      page: value,
+
+      page: String(page),
     }));
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
+
 
   const handlerSearch = (value) => {
     setSearchTerm(value || "");
   };
+
 
   const handlerCategory = (value) => {
     setActiveCategory(value);
 
     setPagination((prev) => ({
       ...prev,
+
       page: "1",
+
       category: value,
     }));
+
     setSearchTerm("");
+
+    setFilterOpen(false);
   };
 
 
@@ -81,9 +113,14 @@ function Shop() {
     setSort(value);
   };
 
+
   useEffect(() => {
-    const fetchAllData = async () => {
+    const fetchProducts = async () => {
       try {
+        setLoading(true);
+
+        setError("");
+
         const params = {
           page: pagination.page,
 
@@ -100,10 +137,13 @@ function Shop() {
           ? response.products
           : [];
 
-        setTemp(productData);
+        const total = Number(response?.total) || 0;
+
         const count = Number(pagination.count) || 9;
 
-        const total = Number(response?.total) || 0;
+        setTemp(productData);
+
+        setTotalProducts(total);
 
         setTotalPage(Math.max(1, Math.ceil(total / count)));
       } catch (error) {
@@ -113,11 +153,17 @@ function Shop() {
 
         setProducts([]);
 
+        setTotalProducts(0);
+
         setTotalPage(1);
+
+        setError("Unable to load products. Please try again later.");
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchAllData();
+    fetchProducts();
   }, [pagination.page, pagination.count, pagination.category]);
 
 
@@ -153,89 +199,261 @@ function Shop() {
     fetchCategories();
   }, []);
 
+
+  const activeCategoryName =
+    activeCategory === "all"
+      ? "All Cameras"
+      : categories.find((item) => item._id === activeCategory)?.category ||
+        "Products";
+
   return (
-    <div className="container">
+    <main className="shop-page">
+      <section className="shop-page-heading">
+        <div className="shop-container">
+          <div className="shop-page-heading-inner">
+            <div>
+              <div className="shop-simple-breadcrumb">
+                <Link to="/">Home</Link>
 
-      <section className="py-5 bg-light">
-        <div className="container">
-          <h1 className="h2 text-uppercase">Shop</h1>
-        </div>
-      </section>
+                <i className="fas fa-chevron-right" />
 
-      <section className="py-5">
-        <div className="container p-0">
-          <div className="row">
-
-            <div className="col-lg-3">
-              <div className="mb-4 p-3 bg-dark text-white rounded">
-                <strong>Categories</strong>
+                <span>Shop</span>
               </div>
 
-              <ul className="list-unstyled category-list">
+              <h1>Shop</h1>
 
-                <li>
-                  <button
-                    type="button"
-                    className={`category-btn ${
-                      activeCategory === "all" ? "active" : ""
-                    }`}
-                    onClick={() => handlerCategory("all")}
-                  >
-                    All
-                  </button>
-                </li>
-
-
-                {categories.map((item) => (
-                  <li key={item._id}>
-                    <button
-                      type="button"
-                      className={`category-btn ${
-                        activeCategory === item._id ? "active" : ""
-                      }`}
-                      onClick={() => handlerCategory(item._id)}
-                    >
-                      {item.category}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="col-lg-9">
-
-              <div className="row mb-3 align-items-center">
-
-                <Search handlerSearch={handlerSearch} products={temp} />
-
-                <div className="col-lg-4 text-right">
-                  <select
-                    className="form-control"
-                    value={sort}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    aria-label="Sort products"
-                  >
-                    <option value="default">Default sorting</option>
-
-                    <option value="low">Price: Low to High</option>
-
-                    <option value="high">Price: High to Low</option>
-                  </select>
-                </div>
-              </div>
-
-              <Products products={products} />
-
-              <Pagination
-                pagination={pagination}
-                handlerChangePage={handlerChangePage}
-                totalPage={totalPage}
-              />
+              <p>Explore our collection of cameras and photography gear.</p>
             </div>
           </div>
         </div>
       </section>
-    </div>
+
+      <section className="shop-content">
+        <div className="shop-container">
+          <div className="shop-toolbar">
+            <div className="shop-toolbar-left">
+              <button
+                type="button"
+                className="shop-filter-mobile-btn"
+                onClick={() => setFilterOpen(true)}
+              >
+                <i className="fas fa-sliders-h" />
+                Filters
+              </button>
+
+              <Search handlerSearch={handlerSearch} products={temp} />
+            </div>
+
+            <div className="shop-toolbar-right">
+              <div className="shop-result-count">
+                <strong>{totalProducts}</strong>
+
+                <span>products</span>
+              </div>
+
+              <div className="shop-sort">
+                <i className="fas fa-sort-amount-down" />
+
+                <select
+                  value={sort}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  aria-label="Sort products"
+                >
+                  <option value="default">Featured</option>
+
+                  <option value="low">Price: Low to High</option>
+
+                  <option value="high">Price: High to Low</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {filterOpen && (
+            <button
+              type="button"
+              className="shop-filter-overlay"
+              onClick={() => setFilterOpen(false)}
+              aria-label="Close filters"
+            />
+          )}
+
+          <div className="shop-layout">
+            <aside
+              className={`shop-sidebar ${
+                filterOpen ? "shop-sidebar-open" : ""
+              }`}
+            >
+              <div className="shop-sidebar-mobile-header">
+                <h3>Filters</h3>
+
+                <button
+                  type="button"
+                  onClick={() => setFilterOpen(false)}
+                  aria-label="Close filters"
+                >
+                  <i className="fas fa-times" />
+                </button>
+              </div>
+
+              <div className="shop-filter-card">
+                <div className="shop-filter-heading">
+                  <div>
+                    <span>Browse</span>
+
+                    <h3>Categories</h3>
+                  </div>
+
+                  <i className="fas fa-camera" />
+                </div>
+
+                <div className="shop-category-list">
+                  <button
+                    type="button"
+                    className={`shop-category-btn ${
+                      activeCategory === "all" ? "active" : ""
+                    }`}
+                    onClick={() => handlerCategory("all")}
+                  >
+                    <span className="shop-category-name">
+                      <span className="shop-category-icon">
+                        <i className="fas fa-th-large" />
+                      </span>
+                      All Cameras
+                    </span>
+
+                    {activeCategory === "all" && (
+                      <i className="fas fa-check shop-category-check" />
+                    )}
+                  </button>
+
+                  {categories.map((item) => (
+                    <button
+                      type="button"
+                      key={item._id}
+                      className={`shop-category-btn ${
+                        activeCategory === item._id ? "active" : ""
+                      }`}
+                      onClick={() => handlerCategory(item._id)}
+                    >
+                      <span className="shop-category-name">
+                        <span className="shop-category-icon">
+                          <i className="fas fa-camera-retro" />
+                        </span>
+
+                        {item.category}
+                      </span>
+
+                      {activeCategory === item._id && (
+                        <i className="fas fa-check shop-category-check" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="shop-help-card">
+                <div className="shop-help-icon">
+                  <i className="fas fa-headset" />
+                </div>
+
+                <h4>Need help choosing?</h4>
+
+                <p>
+                  Our camera advisor can help you find equipment that matches
+                  your needs.
+                </p>
+
+                <Link to="/shop" className="shop-help-link">
+                  Get expert advice
+                  <i className="fas fa-arrow-right" />
+                </Link>
+              </div>
+            </aside>
+
+            <div className="shop-products-area">
+              <div className="shop-products-header">
+                <div>
+                  <span className="shop-products-label">Browse collection</span>
+
+                  <h2>{activeCategoryName}</h2>
+                </div>
+
+                {activeCategory !== "all" && (
+                  <button
+                    type="button"
+                    className="shop-clear-filter"
+                    onClick={() => handlerCategory("all")}
+                  >
+                    Clear filter
+                    <i className="fas fa-times" />
+                  </button>
+                )}
+              </div>
+
+              {searchTerm && (
+                <div className="shop-search-status">
+                  <i className="fas fa-search" />
+
+                  <span>
+                    Results for <strong>"{searchTerm}"</strong>
+                  </span>
+
+                  <button type="button" onClick={() => handlerSearch("")}>
+                    Clear
+                  </button>
+                </div>
+              )}
+
+              {loading && (
+                <div className="shop-loading">
+                  <div className="shop-loading-spinner" />
+
+                  <h4>Loading cameras</h4>
+
+                  <p>Finding the best products for you...</p>
+                </div>
+              )}
+
+              {!loading && error && (
+                <div className="shop-error">
+                  <div className="shop-error-icon">
+                    <i className="fas fa-exclamation" />
+                  </div>
+
+                  <h3>Something went wrong.</h3>
+
+                  <p>{error}</p>
+
+                  <button
+                    type="button"
+                    className="shop-btn shop-btn-primary"
+                    onClick={() => window.location.reload()}
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+
+              {!loading && !error && (
+                <>
+                  <Products products={products} />
+
+                  {products.length > 0 && (
+                    <Pagination
+                      pagination={pagination}
+                      handlerChangePage={handlerChangePage}
+                      totalPage={totalPage}
+                      totalProducts={totalProducts}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
 

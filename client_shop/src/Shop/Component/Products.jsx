@@ -1,114 +1,93 @@
 import React from "react";
-import PropTypes from "prop-types";
+
 import { Link } from "react-router-dom";
 
-Products.propTypes = {
-  products: PropTypes.array,
-  sort: PropTypes.string,
-};
+import "./Products.css";
 
-Products.defaultProps = {
-  products: [],
-  sort: "",
-};
+function Products({ products = [] }) {
 
-function Products(props) {
-  const { products, sort } = props;
+  if (!products.length) {
+    return (
+      <div className="shop-product-empty">
+        <div className="shop-product-empty-icon">
+          <i className="fas fa-camera" />
+        </div>
 
-  const parsePrice = (price) => {
-    if (typeof price === "number") {
-      return price;
-    }
+        <h3>No products found</h3>
 
-    if (!price) {
-      return 0;
-    }
-
-    return Number(price.toString().replace(/[^\d]/g, ""));
-  };
-
-
-  const sortedProducts = [...products];
-
-  if (sort === "DownToUp") {
-    sortedProducts.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
-  } else if (sort === "UpToDown") {
-    sortedProducts.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
+        <p>Try another category, search term or sorting option.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="row">
+    <div className="shop-product-grid">
+      {products.map((product) => (
+        <article className="shop-product-card" key={product._id}>
 
-      {sortedProducts.length > 0 ? (
-        sortedProducts.map((value) => (
-          <div className="col-lg-4 col-sm-6 Section_Category" key={value._id}>
-            <div className="product text-center">
+          <div className="shop-product-image">
+            <Link
+              to={`/detail/${product._id}`}
+              className="shop-product-image-link"
+            >
+              <img src={product.img1} alt={product.name || "Camera"} />
+            </Link>
 
-              <div className="position-relative mb-3">
-                <div className="badge text-white"></div>
+            <div className="shop-product-badge">Featured</div>
 
-                <Link className="d-block" to={`/detail/${value._id}`}>
-                  <img
-                    className="img-fluid w-100"
-                    src={value.img1}
-                    alt={value.name || "Product"}
-                  />
-                </Link>
+            <div className="shop-product-actions">
+              <button type="button" aria-label="Add to wishlist">
+                <i className="far fa-heart" />
+              </button>
 
-                <div className="product-overlay">
-                  <ul className="mb-0 list-inline">
+              <Link to={`/detail/${product._id}`} aria-label="View product">
+                <i className="fas fa-eye" />
+              </Link>
+            </div>
 
-                    <li className="list-inline-item m-0 p-0">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-dark"
-                        aria-label={`Add ${value.name || "product"} to wishlist`}
-                      >
-                        <i className="far fa-heart"></i>
-                      </button>
-                    </li>
+            <Link
+              to={`/detail/${product._id}`}
+              className="shop-product-quick-view"
+            >
+              View Product
+              <i className="fas fa-arrow-right" />
+            </Link>
+          </div>
 
-                    <li className="list-inline-item m-0 p-0">
-                      <Link
-                        className="btn btn-sm btn-dark"
-                        to={`/detail/${value._id}`}
-                      >
-                        Add to cart
-                      </Link>
-                    </li>
+          <div className="shop-product-info">
+            <div className="shop-product-top">
+              <span className="shop-product-category">Camera</span>
 
+              <div className="shop-product-rating">
+                <i className="fas fa-star" />
 
-                    <li className="list-inline-item mr-0">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-dark"
-                        data-toggle="modal"
-                        data-target={`#product_${value._id}`}
-                        aria-label={`Quick view ${value.name || "product"}`}
-                      >
-                        <i className="fas fa-expand"></i>
-                      </button>
-                    </li>
-                  </ul>
-                </div>
+                <span>5.0</span>
               </div>
+            </div>
 
+            <Link to={`/detail/${product._id}`} className="shop-product-title">
+              {product.name}
+            </Link>
 
-              <h6>
-                <Link className="reset-anchor" to={`/detail/${value._id}`}>
-                  {value.name}
-                </Link>
-              </h6>
+            <p className="shop-product-description">
+              {product.description ||
+                "Explore this camera and discover its features and performance."}
+            </p>
 
-              <p className="small text-muted">{value.price}</p>
+            <div className="shop-product-footer">
+              <span className="shop-product-price">{product.price}</span>
+
+              <Link
+                to={`/detail/${product._id}`}
+                className="shop-product-arrow"
+                aria-label="View details"
+              >
+                <i className="fas fa-arrow-right" />
+              </Link>
             </div>
           </div>
-        ))
-      ) : (
-        <div className="col-12">
-          <p className="text-center text-muted">Không có sản phẩm.</p>
-        </div>
-      )}
+        </article>
+      ))}
     </div>
   );
 }
