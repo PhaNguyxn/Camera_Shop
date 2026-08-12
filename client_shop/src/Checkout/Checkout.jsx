@@ -44,6 +44,7 @@ function Checkout() {
 
   const [load, setLoad] = useState(false);
 
+  const [paymentMethod, setPaymentMethod] = useState("COD");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -161,29 +162,21 @@ function Checkout() {
 
       address: address.trim(),
 
-      total,
-
-      cart: [...carts],
+      paymentMethod,
     };
 
     try {
 
+      const response = await HistoryAPI.postHistory(data);
 
-      await HistoryAPI.postHistory(data);
-
-      const params = {
-        idUser,
-      };
-
-      const query = "?" + queryString.stringify(params);
-
-      await CartAPI.deleteToCart(query);
+      console.log("Order:", response);
 
       setCarts([]);
 
       setTotal(0);
 
       setSuccess(true);
+
     } catch (error) {
       console.error("Lỗi đặt hàng:", error);
 
@@ -195,7 +188,6 @@ function Checkout() {
 
   return (
     <div>
-
       {load && (
         <div className="wrapper_loader">
           <div className="loader"></div>
@@ -203,7 +195,6 @@ function Checkout() {
       )}
 
       <div className="container">
-
         <section className="py-5 bg-light">
           <div className="container">
             <div className="row px-4 px-lg-5 py-lg-4 align-items-center">
@@ -237,11 +228,9 @@ function Checkout() {
             <h2 className="h5 text-uppercase mb-4">Billing details</h2>
 
             <div className="row">
-
               <div className="col-lg-8">
                 <form onSubmit={handlerSubmit}>
                   <div className="row">
-
                     <div className="col-lg-12 form-group">
                       <label
                         className="text-small text-uppercase"
@@ -265,7 +254,6 @@ function Checkout() {
                         </span>
                       )}
                     </div>
-
 
                     <div className="col-lg-12 form-group">
                       <label
@@ -296,7 +284,6 @@ function Checkout() {
                         </span>
                       )}
                     </div>
-
 
                     <div className="col-lg-12 form-group">
                       <label
@@ -346,6 +333,60 @@ function Checkout() {
                       )}
                     </div>
 
+                    <div className="col-lg-12 form-group">
+                      <label className="text-small text-uppercase">
+                        Payment methods
+                      </label>
+
+                      <div className="payment-methods">
+                        <label
+                          className={`payment-method ${
+                            paymentMethod === "COD"
+                              ? "payment-method-active"
+                              : ""
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="COD"
+                            checked={paymentMethod === "COD"}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                          />
+
+                          <div>
+                            <strong>Cash on delivery</strong>
+
+                            <p>Pay in cash upon receipt of the product.</p>
+                          </div>
+                        </label>
+
+                        <label
+                          className={`payment-method ${
+                            paymentMethod === "PAYOS"
+                              ? "payment-method-active"
+                              : ""
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="PAYOS"
+                            checked={paymentMethod === "PAYOS"}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            disabled
+                          />
+
+                          <div>
+                            <strong>QR Payment</strong>
+
+                            <p>Bank payment via QR code.</p>
+
+                            <small>Coming soon</small>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
 
                     <div className="col-lg-12 form-group">
                       <button
@@ -353,7 +394,11 @@ function Checkout() {
                         type="submit"
                         disabled={load}
                       >
-                        {load ? "Processing..." : "Place order"}
+                        {load
+                          ? "Processing..."
+                          : paymentMethod === "COD"
+                            ? "Place order"
+                            : "Pay now"}
                       </button>
                     </div>
                   </div>
@@ -369,9 +414,14 @@ function Checkout() {
                       {carts.map((value) => (
                         <React.Fragment key={value._id || value.idProduct}>
                           <li className="d-flex align-items-center justify-content-between">
-                            <strong className="small font-weight-bold">
-                              {value.nameProduct}
-                            </strong>
+                            <div>
+                              <strong className="small font-weight-bold">
+                                {value.nameProduct}
+                              </strong>
+                              <div className="text-muted small">
+                                Quantity: {value.count}
+                              </div>
+                            </div>
 
                             <span className="text-muted small">
                               {(
@@ -412,19 +462,23 @@ function Checkout() {
         {success && (
           <section className="py-5">
             <div className="p-5">
-              <h1>You Have Successfully Ordered!</h1>
+              <div className="order-success">
+                <div className="order-success-icon">✓</div>
 
-              <p
-                style={{
-                  fontSize: "1.2rem",
-                }}
-              >
-                Your order has been placed successfully.
-              </p>
+                <h2>Order placed successfully!</h2>
 
-              <Link to="/history" className="btn btn-dark mt-3">
-                View Order History
-              </Link>
+                <p>Thank you for your order. Your order is being processed.</p>
+
+                <div className="order-success-actions">
+                  <Link to="/history" className="btn btn-dark">
+                    View order
+                  </Link>
+
+                  <Link to="/shop" className="btn btn-outline-dark">
+                    Continue shopping
+                  </Link>
+                </div>
+              </div>
             </div>
           </section>
         )}

@@ -1,57 +1,273 @@
+const Histories = require("../../Model/histories.model");
+const Carts = require("../../Model/carts.model");
+const Products = require("../../Model/products.model");
 
-const Histories = require('../../Model/histories.model')
+const parsePrice = (value) => {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  const numericValue = String(value).replace(/[^\d]/g, "");
+
+  return Number(numericValue) || 0;
+};
+
 
 module.exports.index = async (req, res) => {
+  try {
+    const idUser = req.query.idUser;
 
-    const idUser = req.query.idUser
+    if (!idUser) {
+      return res.status(400).json({
+        message: "Thiếu idUser",
+      });
+    }
 
-    const histories = await Histories.find({ idUser: idUser })
+    const histories = await Histories.find({
+      idUser,
+    }).sort({
+      createdAt: -1,
+    });
 
-    res.json(histories)
-}
+    return res.json(histories);
+  } catch (error) {
+    console.error("Get histories error:", error);
+
+    return res.status(500).json({
+      message: "Không thể tải lịch sử đơn hàng",
+    });
+  }
+};
+
 
 module.exports.detail = async (req, res) => {
+  try {
+    const id = req.params.id;
 
-    const id = req.params.id
+    const history = await Histories.findById(id);
 
-    const histories = await Histories.findOne({_id: id})
+    if (!history) {
+      return res.status(404).json({
+        message: "Không tìm thấy đơn hàng",
+      });
+    }
 
-    res.json(histories)
+    return res.json(history);
+  } catch (error) {
+    console.error("Get history detail error:", error);
 
-}
+    return res.status(500).json({
+      message: "Không thể tải đơn hàng",
+    });
+  }
+};
+
 
 module.exports.history = async (req, res) => {
+  try {
+    const histories = await Histories.find().sort({
+      createdAt: -1,
+    });
 
-    const histories = await Histories.find()
+    return res.json(histories);
+  } catch (error) {
+    console.error("Get all histories error:", error);
 
-    res.json(histories)
+    return res.status(500).json({
+      message: "Không thể tải danh sách đơn hàng",
+    });
+  }
+};
 
-}
 
 module.exports.postHistory = async (req, res) => {
-    try {
-        // Tạo đơn hàng mới từ dữ liệu req.body gửi từ Frontend
-        const newOrder = await Histories.create(req.body)
-        res.status(201).json(newOrder)
-    } catch (error) {
-        res.status(500).json({ message: "Lỗi server khi lưu đơn hàng" })
+  try {
+    const {
+      idUser,
+      fullname,
+      email,
+      phone,
+      address,
+      paymentMethod = "COD",
+    } = req.body;
+
+    if (
+      !idUser ||
+      !fullname?.trim() ||
+      !email?.trim() ||
+      !phone?.trim() ||
+      !address?.trim()
+    ) {
+      return res.status(400).json({
+        message: "Vui lòng nhập đầy đủ thông tin",
+      });
     }
-}
+
+    if (!["COD", "PAYOS"].includes(paymentMethod)) {
+      return res.status(400).json({
+        message: "Phương thức thanh toán không hợp lệ",
+      });
+    }
+
+
+    const carts = await Carts.find({
+      idUser,
+    });
+
+    if (!carts.length) {
+      return res.status(400).json({
+        message: "Giỏ hàng đang trống",
+      });
+    }
+
+
+    const productIds = carts.map((item) => item.idProduct);
+
+    const products = await Products.find({
+      _id: {
+        $in: productIds,
+      },
+    });
+
+    const productMap = new Map();
+
+    products.forEach((product) => {
+      productMap.set(product._id.toString(), product);
+    });
+
+
+    const orderItems = [];
+
+    let totalAmount = 0;
+
+    for (const cartItem of carts) {
+      const product = productMap.get(cartItem.idProduct);
+
+      if (!product) {
+        return res.status(400).json({
+          message: "Có sản phẩm trong giỏ hàng không còn tồn tại",
+        });
+      }
+
+      const quantity = Number(cartItem.count);
+
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        return res.status(400).json({
+          message: "Số lượng sản phẩm không hợp lệ",
+        });
+      }
+
+      const price = parsePrice(product.price);
+
+      if (price <= 0) {
+        return res.status(400).json({
+          message: `Giá sản phẩm ${product.name} không hợp lệ`,
+        });
+      }
+
+      totalAmount += price * quantity;
+
+      orderItems.push({
+        idProduct: product._id.toString(),
+
+        nameProduct: product.name,
+
+        priceProduct: price,
+
+        count: quantity,
+
+        img: product.img1 || "",
+      });
+    }
+
+
+    const order = await Histories.create({
+      orderCode: Date.now(),
+
+      idUser,
+
+      fullname: fullname.trim(),
+
+      email: email.trim(),
+
+      phone: phone.trim(),
+
+      address: address.trim(),
+
+      cart: orderItems,
+
+      total: String(totalAmount),
+
+      totalAmount,
+
+      paymentMethod,
+
+      paymentStatus: paymentMethod === "COD" ? "UNPAID" : "PENDING",
+
+      orderStatus: "PENDING",
+
+      status: false,
+
+      delivery: false,
+    });
+
+
+    if (paymentMethod === "COD") {
+      await Carts.deleteMany({
+        idUser,
+      });
+    }
+
+    return res.status(201).json({
+      message: "Đặt hàng thành công",
+
+      order,
+    });
+  } catch (error) {
+    console.error("Create order error:", error);
+
+    return res.status(500).json({
+      message: "Lỗi server khi tạo đơn hàng",
+    });
+  }
+};
+
 
 module.exports.updateStatus = async (req, res) => {
-    try {
-        const id = req.params.id;
-        const { status } = req.body;
+  try {
+    const id = req.params.id;
 
-        const updated = await Histories.findByIdAndUpdate(
-            id,
-            { status: status },
-            { new: true }
-        );
+    const { status } = req.body;
 
-        res.json(updated);
+    const paid =
+      status === true || status === 1 || status === "1" || status === "true";
 
-    } catch (error) {
-        res.status(500).json({ message: "Update thất bại" });
+    const updated = await Histories.findByIdAndUpdate(
+      id,
+      {
+        status: paid,
+
+        paymentStatus: paid ? "PAID" : "UNPAID",
+
+        paidAt: paid ? new Date() : null,
+      },
+      {
+        new: true,
+      },
+    );
+
+    if (!updated) {
+      return res.status(404).json({
+        message: "Không tìm thấy đơn hàng",
+      });
     }
+
+    return res.json(updated);
+  } catch (error) {
+    console.error("Update order error:", error);
+
+    return res.status(500).json({
+      message: "Update thất bại",
+    });
+  }
 };
