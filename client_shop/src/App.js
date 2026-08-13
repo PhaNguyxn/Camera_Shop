@@ -16,6 +16,7 @@ import SignUp from './Authentication/SignUp';
 import Checkout from './Checkout/Checkout';
 import History from './History/History';
 import Shop from './Shop/Shop';
+import Wishlist from "./Wishlist/Wishlist";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/signup" component={SignUp} />
           <Route path="/checkout" component={Checkout} />
           <Route path="/history" component={History} />
+          <Route path="/wishlist" component={Wishlist} />
           <Route path="/shop" component={Shop} />
         </Switch>
         <Footer />

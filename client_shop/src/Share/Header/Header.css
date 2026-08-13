@@ -411,3 +411,60 @@ span:nth-child(3) {
     gap: 8px;
   }
 }
+
+
+.header-action-with-badge {
+  position: relative;
+}
+
+.header-count-badge {
+  position: absolute;
+
+  top: -3px;
+  right: -5px;
+
+  min-width: 17px;
+  height: 17px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 4px;
+
+  border:
+    2px solid #ffffff;
+
+  border-radius: 999px;
+
+  background: #d8b77e;
+
+  color: #111111;
+
+  font-size: 8px;
+
+  font-weight: 800;
+
+  line-height: 1;
+}
+
+.header-action-with-badge:hover
+.header-count-badge {
+  background: #111111;
+
+  color: #ffffff;
+}
+
+
+@media (max-width: 576px) {
+  .header-count-badge {
+    top: -2px;
+    right: -4px;
+
+    min-width: 16px;
+    height: 16px;
+
+    font-size: 7px;
+  }
+}

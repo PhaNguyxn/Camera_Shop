@@ -1200,3 +1200,22 @@ input::-webkit-outer-spin-button {
     aspect-ratio: 4 / 3;
   }
 }
+
+.detail-wishlist.active {
+  border-color:
+    #111111;
+
+  background:
+    #111111;
+
+  color:
+    #d8b77e;
+}
+
+.detail-wishlist.active:hover {
+  background:
+    #292929;
+
+  color:
+    #d8b77e;
+}

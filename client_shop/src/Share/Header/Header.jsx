@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { Link, useLocation } from "react-router-dom";
 
 import { useDispatch, useSelector } from "react-redux";
+
+import queryString from "query-string";
+
+import CartAPI from "../../API/CartAPI";
 
 import { addUser } from "../../Redux/Action/ActionCart";
 
@@ -11,6 +15,8 @@ import { addSession } from "../../Redux/Action/ActionSession";
 import LoginLink from "../../Authentication/LoginLink";
 import LogoutLink from "../../Authentication/LogoutLink";
 import Name from "../../Authentication/Name";
+
+import { getWishlist } from "../../utils/wishlist";
 
 import "./Header.css";
 
@@ -21,7 +27,19 @@ function Header() {
 
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const [cartCount, setCartCount] = useState(0);
+
+  const [wishlistCount, setWishlistCount] = useState(0);
+
   const idUser = useSelector((state) => state.Session.idUser);
+
+  const guestCart = useSelector((state) => state.Cart.listCart);
+
+  /*
+   * =========================================
+   * RESTORE USER SESSION
+   * =========================================
+   */
 
   useEffect(() => {
     const savedUser = sessionStorage.getItem("id_user");
@@ -32,7 +50,7 @@ function Header() {
       let tempId = sessionStorage.getItem("id_temp");
 
       if (!tempId) {
-        tempId = "abc999";
+        tempId = `guest_${Date.now()}`;
 
         sessionStorage.setItem("id_temp", tempId);
       }
@@ -41,11 +59,93 @@ function Header() {
     }
   }, [dispatch]);
 
+  const calculateCartCount = (items) => {
+    if (!Array.isArray(items)) {
+      return 0;
+    }
+
+    return items.reduce((total, item) => total + (Number(item.count) || 0), 0);
+  };
+
+  const refreshCartCount = useCallback(async () => {
+    const sessionUserId = sessionStorage.getItem("id_user") || idUser;
+
+    /*
+     * Logged in user:
+     * load cart from server.
+     */
+    if (sessionUserId) {
+      try {
+        const params = {
+          idUser: sessionUserId,
+        };
+
+        const query = "?" + queryString.stringify(params);
+
+        const response = await CartAPI.getCarts(query);
+
+        setCartCount(calculateCartCount(response));
+
+        return;
+      } catch (error) {
+        console.error("Load cart count error:", error);
+
+        setCartCount(0);
+
+        return;
+      }
+    }
+
+    setCartCount(calculateCartCount(guestCart));
+  }, [idUser, guestCart]);
+
+  useEffect(() => {
+    refreshCartCount();
+  }, [refreshCartCount]);
+
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      refreshCartCount();
+    };
+
+    window.addEventListener("cartUpdated", handleCartUpdate);
+
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+    };
+  }, [refreshCartCount]);
+
+
+  const refreshWishlistCount = useCallback(() => {
+    setWishlistCount(getWishlist().length);
+  }, []);
+
+  useEffect(() => {
+    refreshWishlistCount();
+
+    const handleWishlist = () => {
+      refreshWishlistCount();
+    };
+
+    const handleStorage = () => {
+      refreshWishlistCount();
+    };
+
+    window.addEventListener("wishlistUpdated", handleWishlist);
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener("wishlistUpdated", handleWishlist);
+
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [refreshWishlistCount]);
+
+
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
-
-  const isLoggedIn = Boolean(idUser);
 
   const isActive = (path) => {
     if (path === "/") {
@@ -54,6 +154,8 @@ function Header() {
 
     return location.pathname.startsWith(path);
   };
+
+  const isLoggedIn = Boolean(idUser || sessionStorage.getItem("id_user"));
 
   return (
     <header className="shop-header">
@@ -100,24 +202,49 @@ function Header() {
           </Link>
         </nav>
 
+
         <div className="header-actions">
-          <Link
-            to="/shop"
-            className="header-action"
-            aria-label="Search products"
-          >
+
+          <Link to="/shop" className="header-action" aria-label="Search">
             <i className="fas fa-search" />
           </Link>
 
+
+          <Link
+            to="/wishlist"
+            className={`header-action header-action-with-badge ${
+              isActive("/wishlist") ? "active" : ""
+            }`}
+            aria-label="Wishlist"
+          >
+            <i className="far fa-heart" />
+
+            {wishlistCount > 0 && (
+              <span className="header-count-badge">
+                {wishlistCount > 99 ? "99+" : wishlistCount}
+              </span>
+            )}
+          </Link>
+
+
           <Link
             to="/cart"
-            className={`header-action ${isActive("/cart") ? "active" : ""}`}
+            className={`header-action header-action-with-badge ${
+              isActive("/cart") ? "active" : ""
+            }`}
             aria-label="Shopping cart"
           >
             <i className="fas fa-shopping-bag" />
 
+            {cartCount > 0 && (
+              <span className="header-count-badge">
+                {cartCount > 99 ? "99+" : cartCount}
+              </span>
+            )}
+
             <span className="header-action-text">Cart</span>
           </Link>
+
 
           <div className="header-account">
             {isLoggedIn && <Name />}
@@ -125,10 +252,11 @@ function Header() {
             {isLoggedIn ? <LoginLink /> : <LogoutLink />}
           </div>
 
+
           <button
             type="button"
             className={`header-menu-button ${menuOpen ? "open" : ""}`}
-            onClick={() => setMenuOpen((prev) => !prev)}
+            onClick={() => setMenuOpen((value) => !value)}
             aria-label="Toggle menu"
           >
             <span />

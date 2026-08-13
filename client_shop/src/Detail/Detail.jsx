@@ -12,6 +12,7 @@ import CartAPI from "../API/CartAPI";
 import CommentAPI from "../API/CommentAPI";
 
 import { addCart } from "../Redux/Action/ActionCart";
+import { isInWishlist, toggleWishlist } from "../utils/wishlist";
 
 import "./Detail.css";
 
@@ -34,6 +35,7 @@ function Detail() {
   const [activeTab, setActiveTab] = useState("description");
 
   const [recentProducts, setRecentProducts] = useState([]);
+  const [favorite, setFavorite] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -122,6 +124,16 @@ function Detail() {
     setRecentProducts(viewed.filter((item) => item._id !== id));
   }, [id, detail]);
 
+  useEffect(() => {
+    if (!detail?._id) {
+      setFavorite(false);
+
+      return;
+    }
+
+    setFavorite(isInWishlist(detail._id));
+  }, [detail]);
+
 
   const categoryName =
     typeof detail.category === "object"
@@ -182,19 +194,21 @@ function Detail() {
         const query = "?" + queryString.stringify(params);
 
         await CartAPI.postAddToCart(query);
+
+        window.dispatchEvent(new Event("cartUpdated"));
       } else {
         dispatch(addCart(data));
       }
 
       alertify.set("notifier", "position", "bottom-left");
 
-      alertify.success("Product added to cart successfully!");
+      alertify.success("Bạn đã thêm sản phẩm vào giỏ hàng thành công!");
     } catch (error) {
-      console.error("Add to cart error:", error);
+      console.error("Thêm sản phẩm vào giỏ hàng thất bại!");
 
       alertify.set("notifier", "position", "bottom-left");
 
-      alertify.error("Unable to add product to cart.");
+      alertify.error("Không tìm thấy sản phẩm!");
     }
   };
 
@@ -207,7 +221,7 @@ function Detail() {
     if (!sessionUserId) {
       alertify.set("notifier", "position", "bottom-left");
 
-      alertify.error("Please sign in before leaving a review.");
+      alertify.error("Vui lòng đăng nhập trước khi đánh giá!");
 
       return;
     }
@@ -215,7 +229,7 @@ function Detail() {
     if (!comment.trim()) {
       alertify.set("notifier", "position", "bottom-left");
 
-      alertify.error("Please enter your review.");
+      alertify.error("Vui lòng nhập nội dung đánh giá!");
 
       return;
     }
@@ -240,13 +254,13 @@ function Detail() {
 
       alertify.set("notifier", "position", "bottom-left");
 
-      alertify.success("Your review has been submitted.");
+      alertify.success("Gửi đánh giá thành công!");
     } catch (error) {
-      console.error("Submit review error:", error);
+      console.error("Gửi đánh giá thất bại!");
 
       alertify.set("notifier", "position", "bottom-left");
 
-      alertify.error("Unable to submit your review.");
+      alertify.error("Gửi đánh giá thất bại!");
     }
   };
 
@@ -308,9 +322,26 @@ function Detail() {
     );
   }
 
+  const handleWishlist = () => {
+    if (!detail?._id) {
+      return;
+    }
+
+    const result = toggleWishlist(detail);
+
+    setFavorite(result.added);
+
+    alertify.set("notifier", "position", "bottom-left");
+
+    if (result.added) {
+      alertify.success("Đã thêm sản phẩm vào danh sách yêu thích!");
+    } else {
+      alertify.success("Đã xóa sản phẩm khỏi danh sách yêu thích!");
+    }
+  };
+
   return (
     <main className="detail-page">
-
       <section className="detail-heading">
         <div className="shop-container">
           <div className="detail-breadcrumb">
@@ -330,7 +361,6 @@ function Detail() {
       <section className="detail-product-section">
         <div className="shop-container">
           <div className="detail-product-grid">
-
             <div className="detail-gallery">
               <Link to="/shop" className="detail-back-button">
                 <i className="fas fa-arrow-left" />
@@ -377,7 +407,6 @@ function Detail() {
                   "Discover this camera and explore its features, performance and creative possibilities."}
               </p>
 
-
               <div className="detail-benefits">
                 <div>
                   <i className="fas fa-shield-alt" />
@@ -397,7 +426,6 @@ function Detail() {
                   <span>Customer support</span>
                 </div>
               </div>
-
 
               <div className="detail-purchase">
                 <div className="detail-quantity">
@@ -436,13 +464,15 @@ function Detail() {
 
                 <button
                   type="button"
-                  className="detail-wishlist"
-                  aria-label="Add to wishlist"
+                  className={`detail-wishlist ${favorite ? "active" : ""}`}
+                  onClick={handleWishlist}
+                  aria-label={
+                    favorite ? "Remove from wishlist" : "Add to wishlist"
+                  }
                 >
-                  <i className="far fa-heart" />
+                  <i className={favorite ? "fas fa-heart" : "far fa-heart"} />
                 </button>
               </div>
-
 
               <div className="detail-meta">
                 <div>
@@ -470,7 +500,6 @@ function Detail() {
           </div>
         </div>
       </section>
-
 
       <section className="detail-tabs-section">
         <div className="shop-container">
@@ -508,7 +537,6 @@ function Detail() {
             </div>
           ) : (
             <div className="detail-reviews-layout">
-
               <div className="detail-review-list">
                 <div className="detail-review-heading">
                   <div>
@@ -605,7 +633,6 @@ function Detail() {
           )}
         </div>
       </section>
-
 
       {recentProducts.length > 0 && (
         <section className="detail-recent-section">
