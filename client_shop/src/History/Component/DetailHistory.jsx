@@ -1,156 +1,301 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { Link, useParams } from "react-router-dom";
 
 import HistoryAPI from "../../API/HistoryAPI";
+import "../History.css";
+
+const parsePrice = (value) => {
+  return Number(String(value || "").replace(/\D/g, "")) || 0;
+};
 
 function DetailHistory() {
   const { id } = useParams();
 
-  const [cart, setCart] = useState([]);
+  const [order, setOrder] = useState({});
 
-  const [information, setInformation] = useState({});
+  const [products, setProducts] = useState([]);
+
+  const [loading, setLoading] = useState(true);
 
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchOrder = async () => {
       try {
+        setLoading(true);
+
         const response = await HistoryAPI.getDetail(id);
 
-        setInformation(response || {});
+        setOrder(response || {});
 
-        setCart(Array.isArray(response?.cart) ? response.cart : []);
+        setProducts(Array.isArray(response?.cart) ? response.cart : []);
       } catch (error) {
         console.error("Load order detail error:", error);
 
-        setInformation({});
-        setCart([]);
+        setOrder({});
+
+        setProducts([]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchData();
+    fetchOrder();
   }, [id]);
 
-  return (
-    <div className="container">
 
-      <section className="py-5 bg-light">
-        <div className="container">
-          <div className="row px-4 px-lg-5 py-lg-4 align-items-center">
-            <div className="col-lg-6">
-              <h1 className="h2 text-uppercase mb-0">Detail Order</h1>
+  const totalItems = useMemo(
+    () =>
+      products.reduce((total, item) => total + (Number(item.count) || 0), 0),
+    [products],
+  );
+
+
+  const formatDate = (date) => {
+    if (!date) {
+      return "Updating";
+    }
+
+    return new Date(date).toLocaleString("en-US", {
+      day: "2-digit",
+
+      month: "short",
+
+      year: "numeric",
+
+      hour: "2-digit",
+
+      minute: "2-digit",
+    });
+  };
+
+
+  if (loading) {
+    return (
+      <main className="history-page">
+        <div className="history-loading">
+          <div className="history-spinner" />
+
+          <p>Loading order...</p>
+        </div>
+      </main>
+    );
+  }
+
+
+  if (!order?._id) {
+    return (
+      <main className="history-page">
+        <div className="shop-container">
+          <div className="history-empty">
+            <div className="history-empty-icon">
+              <i className="fas fa-receipt" />
             </div>
 
-            <div className="col-lg-6 text-lg-right">
-              <nav aria-label="breadcrumb">
-                <ol className="breadcrumb justify-content-lg-end mb-0 px-0">
-                  <li className="breadcrumb-item active" aria-current="page">
-                    Detail
-                  </li>
-                </ol>
-              </nav>
-            </div>
+            <h2>Order not found</h2>
+
+            <p>This order is unavailable or no longer exists.</p>
+
+            <Link to="/history" className="shop-btn shop-btn-primary">
+              Back to Orders
+            </Link>
           </div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="history-page">
+
+      <section className="history-heading">
+        <div className="shop-container">
+          <div className="history-breadcrumb">
+            <Link to="/">Home</Link>
+
+            <i className="fas fa-chevron-right" />
+
+            <Link to="/history">Orders</Link>
+
+            <i className="fas fa-chevron-right" />
+
+            <span>Order Details</span>
+          </div>
+
+          <h1>Order Details</h1>
+
+          <p>Order #{order._id?.slice(-8).toUpperCase()}</p>
         </div>
       </section>
 
-      <div className="p-5">
-        <h1 className="h2 text-uppercase">Information Order</h1>
 
-        <p>ID User: {information.idUser || "Đang cập nhật..."}</p>
+      <section className="history-content">
+        <div className="shop-container">
+          <Link to="/history" className="history-back">
+            <i className="fas fa-arrow-left" />
+            Back to Orders
+          </Link>
 
-        <p>Full Name: {information.fullname || "Đang cập nhật..."}</p>
+          <div className="history-detail-layout">
 
-        <p>Phone: {information.phone || "Đang cập nhật..."}</p>
+            <div className="history-detail-main">
+              <div className="history-detail-title">
+                <div>
+                  <span className="section-eyebrow">Order items</span>
 
-        <p>
-          Date:{" "}
-          {information.createdAt
-            ? new Date(information.createdAt).toLocaleString("vi-VN")
-            : "Đang cập nhật..."}
-        </p>
+                  <h2>Products</h2>
+                </div>
 
-        <p>Total: {Number(information.total || 0).toLocaleString("vi-VN")}đ</p>
-      </div>
+                <span>
+                  {totalItems} {totalItems === 1 ? "item" : "items"}
+                </span>
+              </div>
 
+              <div className="history-products">
+                {products.map((product, index) => {
+                  const price = parsePrice(product.priceProduct);
 
-      <div className="table-responsive pt-5 pb-5">
-        <table className="table">
-          <thead className="bg-light">
-            <tr className="text-center">
-              <th className="border-0" scope="col">
-                <strong className="text-small text-uppercase">
-                  ID Product
-                </strong>
-              </th>
+                  const count = Number(product.count) || 1;
 
-              <th className="border-0" scope="col">
-                <strong className="text-small text-uppercase">Image</strong>
-              </th>
-
-              <th className="border-0" scope="col">
-                <strong className="text-small text-uppercase">Name</strong>
-              </th>
-
-              <th className="border-0" scope="col">
-                <strong className="text-small text-uppercase">Price</strong>
-              </th>
-
-              <th className="border-0" scope="col">
-                <strong className="text-small text-uppercase">Count</strong>
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {cart.length > 0 ? (
-              cart.map((value, index) => (
-                <tr className="text-center" key={value.idProduct || index}>
-
-                  <td className="align-middle border-0">
-                    <h6 className="mb-0">{value.idProduct}</h6>
-                  </td>
-
-                  <td className="pl-0 border-0">
-                    <div className="media align-items-center justify-content-center">
+                  return (
+                    <article
+                      className="history-product"
+                      key={product.idProduct || index}
+                    >
                       <Link
-                        className="reset-anchor d-block animsition-link"
-                        to={`/detail/${value.idProduct}`}
+                        to={`/detail/${product.idProduct}`}
+                        className="history-product-image"
                       >
                         <img
-                          src={value.img}
-                          alt={value.nameProduct || "Product"}
-                          width="200"
+                          src={product.img}
+                          alt={product.nameProduct || "Product"}
                         />
                       </Link>
+
+                      <div className="history-product-info">
+                        <Link to={`/detail/${product.idProduct}`}>
+                          {product.nameProduct}
+                        </Link>
+
+                        <span>
+                          {price.toLocaleString("vi-VN")}
+                          {" ₫"}
+                        </span>
+                      </div>
+
+                      <div className="history-product-quantity">
+                        <span>Quantity</span>
+
+                        <strong>{count}</strong>
+                      </div>
+
+                      <div className="history-product-total">
+                        <span>Total</span>
+
+                        <strong>
+                          {(price * count).toLocaleString("vi-VN")}
+                          {" ₫"}
+                        </strong>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+
+
+            <aside className="history-detail-sidebar">
+              <div className="history-info-card">
+                <span className="section-eyebrow">Order information</span>
+
+                <h3>Summary</h3>
+
+                <div className="history-info-row">
+                  <span>Order ID</span>
+
+                  <strong>#{order._id?.slice(-8).toUpperCase()}</strong>
+                </div>
+
+                <div className="history-info-row">
+                  <span>Date</span>
+
+                  <strong>{formatDate(order.createdAt)}</strong>
+                </div>
+
+                <div className="history-info-row">
+                  <span>Delivery</span>
+
+                  <strong
+                    className={`history-status ${
+                      order.delivery ? "processed" : "processing"
+                    }`}
+                  >
+                    {order.delivery ? "Processed" : "Processing"}
+                  </strong>
+                </div>
+
+                <div className="history-info-row">
+                  <span>Payment</span>
+
+                  <strong
+                    className={`history-status ${
+                      order.status ? "paid" : "cod"
+                    }`}
+                  >
+                    {order.status ? "Paid" : "COD"}
+                  </strong>
+                </div>
+
+                <div className="history-info-divider" />
+
+                <div className="history-info-total">
+                  <span>Total</span>
+
+                  <strong>
+                    {Number(order.total || 0).toLocaleString("vi-VN")}
+                    {" ₫"}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="history-info-card">
+                <span className="section-eyebrow">Shipping</span>
+
+                <h3>Customer</h3>
+
+                <div className="history-customer-info">
+                  <div>
+                    <i className="far fa-user" />
+
+                    <span>{order.fullname || "Updating"}</span>
+                  </div>
+
+                  <div>
+                    <i className="fas fa-phone-alt" />
+
+                    <span>{order.phone || "Updating"}</span>
+                  </div>
+
+                  {order.email && (
+                    <div>
+                      <i className="far fa-envelope" />
+
+                      <span>{order.email}</span>
                     </div>
-                  </td>
+                  )}
 
-                  <td className="align-middle border-0">
-                    <h6 className="mb-0">{value.nameProduct}</h6>
-                  </td>
+                  <div>
+                    <i className="fas fa-map-marker-alt" />
 
-
-                  <td className="align-middle border-0">
-                    <h6 className="mb-0">{value.priceProduct}</h6>
-                  </td>
-
-                  <td className="align-middle border-0">
-                    <h6 className="mb-0">{value.count}</h6>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="5" className="text-center py-4">
-                  Không có sản phẩm trong đơn hàng.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                    <span>{order.address || "Updating"}</span>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
 

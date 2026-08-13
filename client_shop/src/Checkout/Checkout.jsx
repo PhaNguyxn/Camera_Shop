@@ -1,61 +1,69 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+
+import { Link, useHistory } from "react-router-dom";
+
 import queryString from "query-string";
+import alertify from "alertifyjs";
 
 import CartAPI from "../API/CartAPI";
 import HistoryAPI from "../API/HistoryAPI";
 
 import "./Checkout.css";
 
+const parsePrice = (price) => {
+  if (price === null || price === undefined) {
+    return 0;
+  }
+
+  return Number(String(price).replace(/\D/g, "")) || 0;
+};
+
 const calculateTotal = (carts = []) => {
-  let subTotal = 0;
-
-  carts.forEach((value) => {
-    const price = value.priceProduct
-      .toString()
-      .replace(/\./g, "")
-      .replace(" đ", "");
-
-    subTotal += parseInt(price, 10) * parseInt(value.count, 10);
-  });
-
-  return subTotal;
+  return carts.reduce(
+    (total, item) =>
+      total + parsePrice(item.priceProduct) * (Number(item.count) || 0),
+    0,
+  );
 };
 
 function Checkout() {
+  const history = useHistory();
+
   const [carts, setCarts] = useState([]);
 
-  const [total, setTotal] = useState(0);
+  const [loadingCart, setLoadingCart] = useState(true);
 
-  const [fullname, setFullname] = useState("");
-  const [fullnameError, setFullnameError] = useState(false);
-
-  const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState(false);
-  const [emailRegex, setEmailRegex] = useState(false);
-
-  const [phone, setPhone] = useState("");
-  const [phoneError, setPhoneError] = useState(false);
-
-  const [address, setAddress] = useState("");
-  const [addressError, setAddressError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [success, setSuccess] = useState(false);
 
-  const [load, setLoad] = useState(false);
+  const [fullname, setFullname] = useState("");
 
-  const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [email, setEmail] = useState("");
+
+  const [phone, setPhone] = useState("");
+
+  const [address, setAddress] = useState("");
+
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCart = async () => {
       const idUser = sessionStorage.getItem("id_user");
 
       if (!idUser) {
-        window.location.replace("/cart");
+        alertify.set("notifier", "position", "bottom-left");
+
+        alertify.error("Vui lòng đăng nhập trước khi thanh toán!");
+
+        history.replace("/cart");
+
         return;
       }
 
       try {
+        setLoadingCart(true);
+
         const params = {
           idUser,
         };
@@ -67,76 +75,105 @@ function Checkout() {
         const cartData = Array.isArray(response) ? response : [];
 
         if (cartData.length === 0) {
-          window.location.replace("/cart");
+          alertify.set("notifier", "position", "bottom-left");
+
+          alertify.error("Giỏ hàng của bạn đang trống!");
+
+          history.replace("/cart");
 
           return;
         }
 
         setCarts(cartData);
-
-        setTotal(calculateTotal(cartData));
       } catch (error) {
-        console.error("Lỗi tải giỏ hàng:", error);
+        console.error("Load cart error:", error);
+
+        alertify.set("notifier", "position", "bottom-left");
+
+        alertify.error("Không thể tải giỏ hàng!");
+      } finally {
+        setLoadingCart(false);
       }
     };
 
-    fetchData();
-  }, []);
+    fetchCart();
+  }, [history]);
 
-  const validateEmail = (emailValue) => {
-    const re =
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
-    return re.test(String(emailValue).toLowerCase());
+  const total = useMemo(() => calculateTotal(carts), [carts]);
+
+  const totalItems = useMemo(
+    () => carts.reduce((sum, item) => sum + (Number(item.count) || 0), 0),
+    [carts],
+  );
+
+
+  const validateEmail = (value) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   };
 
+  const validatePhone = (value) => {
+    const normalized = value.replace(/\s/g, "");
 
-  const resetErrors = () => {
-    setFullnameError(false);
-    setEmailError(false);
-    setEmailRegex(false);
-    setPhoneError(false);
-    setAddressError(false);
+    return /^[0-9+]{9,15}$/.test(normalized);
   };
 
-
-  const handlerSubmit = async (e) => {
-    e.preventDefault();
-
-    resetErrors();
+  const validateForm = () => {
+    const newErrors = {};
 
     if (!fullname.trim()) {
-      setFullnameError(true);
-
-      return;
+      newErrors.fullname = "Full name is required.";
     }
 
     if (!email.trim()) {
-      setEmailError(true);
-
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      setEmailRegex(true);
-
-      return;
+      newErrors.email = "Email is required.";
+    } else if (!validateEmail(email.trim())) {
+      newErrors.email = "Please enter a valid email address.";
     }
 
     if (!phone.trim()) {
-      setPhoneError(true);
-
-      return;
+      newErrors.phone = "Phone number is required.";
+    } else if (!validatePhone(phone.trim())) {
+      newErrors.phone = "Please enter a valid phone number.";
     }
 
     if (!address.trim()) {
-      setAddressError(true);
+      newErrors.address = "Delivery address is required.";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+
+  const handleInput = (setter, field) => (event) => {
+    setter(event.target.value);
+
+    if (errors[field]) {
+      setErrors((current) => ({
+        ...current,
+        [field]: "",
+      }));
+    }
+  };
+
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!validateForm()) {
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Vui lòng kiểm tra lại thông tin đặt hàng!");
 
       return;
     }
 
     if (carts.length === 0) {
-      alert("Giỏ hàng của bạn đang trống!");
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Giỏ hàng của bạn đang trống!");
 
       return;
     }
@@ -144,12 +181,14 @@ function Checkout() {
     const idUser = sessionStorage.getItem("id_user");
 
     if (!idUser) {
-      alert("Vui lòng đăng nhập trước khi đặt hàng!");
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Vui lòng đăng nhập trước khi đặt hàng!");
+
+      history.push("/signin");
 
       return;
     }
-
-    setLoad(true);
 
     const data = {
       idUser,
@@ -162,328 +201,398 @@ function Checkout() {
 
       address: address.trim(),
 
-      paymentMethod,
+      total,
+
+      cart: [...carts],
     };
 
     try {
+      setSubmitting(true);
 
-      const response = await HistoryAPI.postHistory(data);
+      await HistoryAPI.postHistory(data);
 
-      console.log("Order:", response);
+      const params = {
+        idUser,
+      };
+
+      const query = "?" + queryString.stringify(params);
+
+      await CartAPI.deleteToCart(query);
 
       setCarts([]);
 
-      setTotal(0);
+      window.dispatchEvent(new Event("cartUpdated"));
 
       setSuccess(true);
 
-    } catch (error) {
-      console.error("Lỗi đặt hàng:", error);
+      alertify.set("notifier", "position", "bottom-left");
 
-      alert("Đặt hàng thất bại, vui lòng thử lại!");
+      alertify.success("Đặt hàng thành công!");
+    } catch (error) {
+      console.error("Place order error:", error);
+
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Đặt hàng thất bại, vui lòng thử lại!");
     } finally {
-      setLoad(false);
+      setSubmitting(false);
     }
   };
 
-  return (
-    <div>
-      {load && (
-        <div className="wrapper_loader">
-          <div className="loader"></div>
-        </div>
-      )}
 
-      <div className="container">
-        <section className="py-5 bg-light">
-          <div className="container">
-            <div className="row px-4 px-lg-5 py-lg-4 align-items-center">
-              <div className="col-lg-6">
-                <h1 className="h2 text-uppercase mb-0">Checkout</h1>
+  if (loadingCart) {
+    return (
+      <main className="checkout-page">
+        <div className="checkout-loading">
+          <div className="checkout-spinner" />
+
+          <p>Loading checkout...</p>
+        </div>
+      </main>
+    );
+  }
+
+
+  if (success) {
+    return (
+      <main className="checkout-page">
+        <section className="checkout-success-section">
+          <div className="shop-container">
+            <div className="checkout-success">
+              <div className="checkout-success-icon">
+                <i className="fas fa-check" />
               </div>
 
-              <div className="col-lg-6 text-lg-right">
-                <nav aria-label="breadcrumb">
-                  <ol className="breadcrumb justify-content-lg-end mb-0 px-0">
-                    <li className="breadcrumb-item">
-                      <Link to="/">Home</Link>
-                    </li>
+              <span className="section-eyebrow">Order completed</span>
 
-                    <li className="breadcrumb-item">
-                      <Link to="/cart">Cart</Link>
-                    </li>
+              <h1>Thank you for your order.</h1>
 
-                    <li className="breadcrumb-item active" aria-current="page">
-                      Checkout
-                    </li>
-                  </ol>
-                </nav>
+              <p>
+                Your order has been placed successfully. You can view the latest
+                status in your order history.
+              </p>
+
+              <div className="checkout-success-actions">
+                <Link to="/history" className="shop-btn shop-btn-primary">
+                  View Orders
+                </Link>
+
+                <Link to="/shop" className="shop-btn shop-btn-outline">
+                  Continue Shopping
+                </Link>
               </div>
             </div>
           </div>
         </section>
+      </main>
+    );
+  }
 
-        {!success && (
-          <section className="py-5">
-            <h2 className="h5 text-uppercase mb-4">Billing details</h2>
+  return (
+    <main className="checkout-page">
 
-            <div className="row">
-              <div className="col-lg-8">
-                <form onSubmit={handlerSubmit}>
-                  <div className="row">
-                    <div className="col-lg-12 form-group">
-                      <label
-                        className="text-small text-uppercase"
-                        htmlFor="fullname"
-                      >
-                        Full Name:
-                      </label>
+      <section className="checkout-heading">
+        <div className="shop-container">
+          <div className="checkout-breadcrumb">
+            <Link to="/">Home</Link>
 
-                      <input
-                        id="fullname"
-                        className="form-control form-control-lg"
-                        value={fullname}
-                        onChange={(e) => setFullname(e.target.value)}
-                        type="text"
-                        placeholder="Enter Your Full Name Here!"
-                      />
+            <i className="fas fa-chevron-right" />
 
-                      {fullnameError && (
-                        <span className="text-danger">
-                          * Please Check Your Full Name!
-                        </span>
-                      )}
-                    </div>
+            <Link to="/cart">Cart</Link>
 
-                    <div className="col-lg-12 form-group">
-                      <label
-                        className="text-small text-uppercase"
-                        htmlFor="email"
-                      >
-                        Email:
-                      </label>
+            <i className="fas fa-chevron-right" />
 
-                      <input
-                        id="email"
-                        className="form-control form-control-lg"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        type="email"
-                        placeholder="Enter Your Email Here!"
-                      />
+            <span>Checkout</span>
+          </div>
 
-                      {emailError && (
-                        <span className="text-danger">
-                          * Please Check Your Email!
-                        </span>
-                      )}
+          <h1>Checkout</h1>
 
-                      {emailRegex && (
-                        <span className="text-danger">
-                          * Incorrect Email Format
-                        </span>
-                      )}
-                    </div>
+          <p>Complete your delivery information and review your order.</p>
+        </div>
+      </section>
 
-                    <div className="col-lg-12 form-group">
-                      <label
-                        className="text-small text-uppercase"
-                        htmlFor="phone"
-                      >
-                        Phone Number:
-                      </label>
 
-                      <input
-                        id="phone"
-                        className="form-control form-control-lg"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        type="tel"
-                        placeholder="Enter Your Phone Number Here!"
-                      />
+      <section className="checkout-content">
+        <div className="shop-container">
+          <div className="checkout-layout">
 
-                      {phoneError && (
-                        <span className="text-danger">
-                          * Please Check Your Phone Number!
-                        </span>
-                      )}
-                    </div>
+            <div className="checkout-form-section">
+              <div className="checkout-section-heading">
+                <span className="checkout-step">01</span>
 
-                    <div className="col-lg-12 form-group">
-                      <label
-                        className="text-small text-uppercase"
-                        htmlFor="address"
-                      >
-                        Address:
-                      </label>
+                <div>
+                  <h2>Delivery Information</h2>
 
-                      <input
-                        id="address"
-                        className="form-control form-control-lg"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        type="text"
-                        placeholder="Enter Your Address Here!"
-                      />
-
-                      {addressError && (
-                        <span className="text-danger">
-                          * Please Check Your Address!
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="col-lg-12 form-group">
-                      <label className="text-small text-uppercase">
-                        Payment methods
-                      </label>
-
-                      <div className="payment-methods">
-                        <label
-                          className={`payment-method ${
-                            paymentMethod === "COD"
-                              ? "payment-method-active"
-                              : ""
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            value="COD"
-                            checked={paymentMethod === "COD"}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                          />
-
-                          <div>
-                            <strong>Cash on delivery</strong>
-
-                            <p>Pay in cash upon receipt of the product.</p>
-                          </div>
-                        </label>
-
-                        <label
-                          className={`payment-method ${
-                            paymentMethod === "PAYOS"
-                              ? "payment-method-active"
-                              : ""
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            value="PAYOS"
-                            checked={paymentMethod === "PAYOS"}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                            disabled
-                          />
-
-                          <div>
-                            <strong>QR Payment</strong>
-
-                            <p>Bank payment via QR code.</p>
-
-                            <small>Coming soon</small>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="col-lg-12 form-group">
-                      <button
-                        className="btn btn-dark"
-                        type="submit"
-                        disabled={load}
-                      >
-                        {load
-                          ? "Processing..."
-                          : paymentMethod === "COD"
-                            ? "Place order"
-                            : "Pay now"}
-                      </button>
-                    </div>
-                  </div>
-                </form>
+                  <p>Enter the information required to deliver your order.</p>
+                </div>
               </div>
 
-              <div className="col-lg-4">
-                <div className="card border-0 rounded-0 p-lg-4 bg-light">
-                  <div className="card-body">
-                    <h5 className="text-uppercase mb-4">Your order</h5>
+              <form className="checkout-form" onSubmit={handleSubmit}>
 
-                    <ul className="list-unstyled mb-0">
-                      {carts.map((value) => (
-                        <React.Fragment key={value._id || value.idProduct}>
-                          <li className="d-flex align-items-center justify-content-between">
-                            <div>
-                              <strong className="small font-weight-bold">
-                                {value.nameProduct}
-                              </strong>
-                              <div className="text-muted small">
-                                Quantity: {value.count}
-                              </div>
-                            </div>
+                <div className="checkout-form-group">
+                  <label htmlFor="fullname">Full Name</label>
 
-                            <span className="text-muted small">
-                              {(
-                                Number(
-                                  value.priceProduct
-                                    .toString()
-                                    .replace(/\D/g, ""),
-                                ) * Number(value.count)
-                              ).toLocaleString("vi-VN")}
+                  <div
+                    className={`checkout-input ${
+                      errors.fullname ? "error" : ""
+                    }`}
+                  >
+                    <i className="far fa-user" />
 
-                              {" đ"}
-                            </span>
-                          </li>
+                    <input
+                      id="fullname"
+                      type="text"
+                      value={fullname}
+                      onChange={handleInput(setFullname, "fullname")}
+                      placeholder="Enter your full name"
+                      autoComplete="name"
+                    />
+                  </div>
 
-                          <li className="border-bottom my-2"></li>
-                        </React.Fragment>
-                      ))}
+                  {errors.fullname && (
+                    <span className="checkout-error">{errors.fullname}</span>
+                  )}
+                </div>
 
-                      <li className="d-flex align-items-center justify-content-between">
-                        <strong className="text-uppercase small font-weight-bold">
-                          Total
-                        </strong>
+
+                <div className="checkout-form-group">
+                  <label htmlFor="email">Email Address</label>
+
+                  <div
+                    className={`checkout-input ${errors.email ? "error" : ""}`}
+                  >
+                    <i className="far fa-envelope" />
+
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={handleInput(setEmail, "email")}
+                      placeholder="Enter your email"
+                      autoComplete="email"
+                    />
+                  </div>
+
+                  {errors.email && (
+                    <span className="checkout-error">{errors.email}</span>
+                  )}
+                </div>
+
+
+                <div className="checkout-form-group">
+                  <label htmlFor="phone">Phone Number</label>
+
+                  <div
+                    className={`checkout-input ${errors.phone ? "error" : ""}`}
+                  >
+                    <i className="fas fa-phone-alt" />
+
+                    <input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={handleInput(setPhone, "phone")}
+                      placeholder="Enter your phone number"
+                      autoComplete="tel"
+                    />
+                  </div>
+
+                  {errors.phone && (
+                    <span className="checkout-error">{errors.phone}</span>
+                  )}
+                </div>
+
+
+                <div className="checkout-form-group checkout-form-group-full">
+                  <label htmlFor="address">Delivery Address</label>
+
+                  <div
+                    className={`checkout-input ${
+                      errors.address ? "error" : ""
+                    }`}
+                  >
+                    <i className="fas fa-map-marker-alt" />
+
+                    <input
+                      id="address"
+                      type="text"
+                      value={address}
+                      onChange={handleInput(setAddress, "address")}
+                      placeholder="Enter your delivery address"
+                      autoComplete="street-address"
+                    />
+                  </div>
+
+                  {errors.address && (
+                    <span className="checkout-error">{errors.address}</span>
+                  )}
+                </div>
+
+
+                <div className="checkout-payment">
+                  <div className="checkout-payment-title">
+                    <span className="checkout-step">02</span>
+
+                    <div>
+                      <h2>Payment</h2>
+
+                      <p>Choose your payment method.</p>
+                    </div>
+                  </div>
+
+                  <div className="checkout-payment-option active">
+                    <div className="checkout-radio">
+                      <span />
+                    </div>
+
+                    <div className="checkout-payment-icon">
+                      <i className="fas fa-money-bill-wave" />
+                    </div>
+
+                    <div>
+                      <strong>Cash on Delivery</strong>
+
+                      <span>Pay when your order arrives.</span>
+                    </div>
+                  </div>
+                </div>
+
+
+                <button
+                  type="submit"
+                  className="checkout-submit checkout-submit-mobile"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <i className="fas fa-circle-notch fa-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Place Order
+                      <i className="fas fa-arrow-right" />
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+
+
+            <aside className="checkout-summary">
+              <div className="checkout-summary-header">
+                <div>
+                  <span>Order summary</span>
+
+                  <h2>Your Order</h2>
+                </div>
+
+                <Link to="/cart">Edit Cart</Link>
+              </div>
+
+              <div className="checkout-items">
+                {carts.map((item, index) => {
+                  const price = parsePrice(item.priceProduct);
+
+                  const count = Number(item.count) || 1;
+
+                  return (
+                    <div
+                      className="checkout-item"
+                      key={item._id || item.idProduct || index}
+                    >
+                      <div className="checkout-item-image">
+                        <img
+                          src={item.img}
+                          alt={item.nameProduct || "Product"}
+                        />
+
+                        <span>{count}</span>
+                      </div>
+
+                      <div className="checkout-item-info">
+                        <strong>{item.nameProduct}</strong>
 
                         <span>
-                          {total.toLocaleString("vi-VN")}
-
-                          {" đ"}
+                          {price.toLocaleString("vi-VN")}
+                          {" ₫"}
                         </span>
-                      </li>
-                    </ul>
-                  </div>
+                      </div>
+
+                      <strong className="checkout-item-total">
+                        {(price * count).toLocaleString("vi-VN")}
+                        {" ₫"}
+                      </strong>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="checkout-summary-details">
+                <div>
+                  <span>Items</span>
+
+                  <strong>{totalItems}</strong>
+                </div>
+
+                <div>
+                  <span>Subtotal</span>
+
+                  <strong>
+                    {total.toLocaleString("vi-VN")}
+                    {" ₫"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Shipping</span>
+
+                  <strong className="checkout-free">Free</strong>
                 </div>
               </div>
-            </div>
-          </section>
-        )}
 
-        {success && (
-          <section className="py-5">
-            <div className="p-5">
-              <div className="order-success">
-                <div className="order-success-icon">✓</div>
+              <div className="checkout-summary-total">
+                <span>Total</span>
 
-                <h2>Order placed successfully!</h2>
+                <strong>
+                  {total.toLocaleString("vi-VN")}
+                  {" ₫"}
+                </strong>
+              </div>
 
-                <p>Thank you for your order. Your order is being processed.</p>
+              <button
+                type="button"
+                className="checkout-submit checkout-submit-desktop"
+                disabled={submitting}
+                onClick={handleSubmit}
+              >
+                {submitting ? (
+                  <>
+                    <i className="fas fa-circle-notch fa-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Place Order
+                    <i className="fas fa-arrow-right" />
+                  </>
+                )}
+              </button>
 
-                <div className="order-success-actions">
-                  <Link to="/history" className="btn btn-dark">
-                    View order
-                  </Link>
+              <div className="checkout-security">
+                <i className="fas fa-lock" />
 
-                  <Link to="/shop" className="btn btn-outline-dark">
-                    Continue shopping
-                  </Link>
+                <div>
+                  <strong>Secure checkout</strong>
+
+                  <span>Your information is protected.</span>
                 </div>
               </div>
-            </div>
-          </section>
-        )}
-      </div>
-    </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
 
