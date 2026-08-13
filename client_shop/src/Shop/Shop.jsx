@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-import { Link } from "react-router-dom";
+import { Link, useHistory, useLocation } from "react-router-dom";
 
 import queryString from "query-string";
 
@@ -37,6 +37,9 @@ const sortProducts = (list, sortType) => {
 };
 
 function Shop() {
+  const location = useLocation();
+
+  const history = useHistory();
 
   const [products, setProducts] = useState([]);
 
@@ -87,33 +90,49 @@ function Shop() {
     });
   };
 
-
   const handlerSearch = (value) => {
     setSearchTerm(value || "");
   };
-
 
   const handlerCategory = (value) => {
     setActiveCategory(value);
 
     setPagination((prev) => ({
       ...prev,
-
       page: "1",
-
       category: value,
     }));
 
     setSearchTerm("");
 
     setFilterOpen(false);
-  };
 
+    /*
+     * ALL CAMERAS
+     */
+    if (value === "all") {
+      history.push("/shop");
+
+      return;
+    }
+
+    /*
+     * Tìm tên category
+     */
+    const selectedCategory = categories.find(
+      (item) => String(item._id) === String(value),
+    );
+
+    if (selectedCategory) {
+      history.push(
+        `/shop?category=${encodeURIComponent(selectedCategory.category)}`,
+      );
+    }
+  };
 
   const handleSortChange = (value) => {
     setSort(value);
   };
-
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -167,31 +186,32 @@ function Shop() {
     fetchProducts();
   }, [pagination.page, pagination.count, pagination.category]);
 
+  useEffect(() => {
+    let source = searchTerm.trim() ? [...allProducts] : [...temp];
 
-useEffect(() => {
-  let source = searchTerm.trim() ? [...allProducts] : [...temp];
+    if (searchTerm.trim() && activeCategory !== "all") {
+      source = source.filter((item) => {
+        const categoryId =
+          typeof item.category === "object"
+            ? item.category?._id
+            : item.category;
 
-  if (searchTerm.trim() && activeCategory !== "all") {
-    source = source.filter((item) => {
-      const categoryId =
-        typeof item.category === "object" ? item.category?._id : item.category;
+        return String(categoryId) === String(activeCategory);
+      });
+    }
 
-      return String(categoryId) === String(activeCategory);
-    });
-  }
+    if (searchTerm.trim()) {
+      const keyword = searchTerm.trim().toLowerCase();
 
-  if (searchTerm.trim()) {
-    const keyword = searchTerm.trim().toLowerCase();
+      source = source.filter((item) =>
+        item.name?.toLowerCase().includes(keyword),
+      );
+    }
 
-    source = source.filter((item) =>
-      item.name?.toLowerCase().includes(keyword),
-    );
-  }
+    const sorted = sortProducts(source, sort);
 
-  const sorted = sortProducts(source, sort);
-
-  setProducts(sorted);
-}, [temp, allProducts, searchTerm, sort, activeCategory]);
+    setProducts(sorted);
+  }, [temp, allProducts, searchTerm, sort, activeCategory]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -209,6 +229,50 @@ useEffect(() => {
     fetchCategories();
   }, []);
 
+
+  useEffect(() => {
+
+    if (!categories.length) {
+      return;
+    }
+
+    const params = queryString.parse(location.search);
+
+    const categoryFromUrl = params.category;
+
+    if (!categoryFromUrl) {
+      return;
+    }
+
+    const matchedCategory = categories.find(
+      (item) =>
+        String(item.category).trim().toLowerCase() ===
+        String(categoryFromUrl).trim().toLowerCase(),
+    );
+
+    if (!matchedCategory) {
+      return;
+    }
+
+    setActiveCategory(matchedCategory._id);
+
+
+    setPagination((prev) => {
+      if (
+        String(prev.category) === String(matchedCategory._id) &&
+        String(prev.page) === "1"
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        page: "1",
+        category: matchedCategory._id,
+      };
+    });
+  }, [categories, location.search]);
+
   useEffect(() => {
     const fetchAllProducts = async () => {
       try {
@@ -224,7 +288,6 @@ useEffect(() => {
 
     fetchAllProducts();
   }, []);
-
 
   const activeCategoryName =
     activeCategory === "all"

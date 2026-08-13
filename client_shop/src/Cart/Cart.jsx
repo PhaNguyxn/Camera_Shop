@@ -91,11 +91,11 @@ function Cart() {
 
 
   const onDeleteCart = async (getUser, getProduct) => {
+
     if (idUser) {
       try {
         const params = {
           idUser: getUser,
-
           idProduct: getProduct,
         };
 
@@ -103,7 +103,11 @@ function Cart() {
 
         await CartAPI.deleteToCart(query);
 
-        await fetchCartFromAPI();
+        setCart((currentCart) =>
+          currentCart.filter(
+            (item) => String(item.idProduct) !== String(getProduct),
+          ),
+        );
 
         window.dispatchEvent(new Event("cartUpdated"));
 
@@ -112,6 +116,8 @@ function Cart() {
         alertify.success("Bạn đã xóa sản phẩm thành công!");
       } catch (error) {
         console.error("Delete cart error:", error);
+
+        alertify.set("notifier", "position", "bottom-left");
 
         alertify.error("Xóa sản phẩm thất bại!");
       }
@@ -122,10 +128,17 @@ function Cart() {
     dispatch(
       deleteCart({
         idProduct: getProduct,
-
         idUser: getUser,
       }),
     );
+
+    setCart((currentCart) =>
+      currentCart.filter(
+        (item) => String(item.idProduct) !== String(getProduct),
+      ),
+    );
+
+    window.dispatchEvent(new Event("cartUpdated"));
 
     alertify.set("notifier", "position", "bottom-left");
 
@@ -134,7 +147,9 @@ function Cart() {
 
 
   const onUpdateCount = async (getUser, getProduct, getCount) => {
-    if (Number(getCount) < 1) {
+    const newCount = Number(getCount);
+
+    if (newCount < 1) {
       return;
     }
 
@@ -142,17 +157,24 @@ function Cart() {
       try {
         const params = {
           idUser: getUser,
-
           idProduct: getProduct,
-
-          count: getCount,
+          count: newCount,
         };
 
         const query = "?" + queryString.stringify(params);
 
         await CartAPI.putToCart(query);
 
-        await fetchCartFromAPI();
+        setCart((currentCart) =>
+          currentCart.map((item) =>
+            String(item.idProduct) === String(getProduct)
+              ? {
+                  ...item,
+                  count: newCount,
+                }
+              : item,
+          ),
+        );
 
         window.dispatchEvent(new Event("cartUpdated"));
 
@@ -161,6 +183,8 @@ function Cart() {
         alertify.success("Bạn đã cập nhật giỏ hàng thành công!");
       } catch (error) {
         console.error("Update cart error:", error);
+
+        alertify.set("notifier", "position", "bottom-left");
 
         alertify.error("Cập nhật giỏ hàng thất bại!");
       }
@@ -174,9 +198,22 @@ function Cart() {
 
         idUser: getUser,
 
-        count: getCount,
+        count: newCount,
       }),
     );
+
+    setCart((currentCart) =>
+      currentCart.map((item) =>
+        String(item.idProduct) === String(getProduct)
+          ? {
+              ...item,
+              count: newCount,
+            }
+          : item,
+      ),
+    );
+
+    window.dispatchEvent(new Event("cartUpdated"));
 
     alertify.set("notifier", "position", "bottom-left");
 

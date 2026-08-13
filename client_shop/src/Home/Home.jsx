@@ -328,7 +328,10 @@ function Home() {
                 }
                 key={category.id}
               >
-                <Link className="camera-category-card" to="/shop">
+                <Link
+                  className="camera-category-card"
+                  to={`/shop?category=${encodeURIComponent(category.title)}`}
+                >
                   <img src={category.image} alt={`${category.title} cameras`} />
 
                   <div className="camera-category-overlay" />
