@@ -1,50 +1,56 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+
 import { useDispatch, useSelector } from "react-redux";
+
 import { Link, Redirect } from "react-router-dom";
 
 import alertify from "alertifyjs";
 import queryString from "query-string";
 
 import { deleteCart, updateCart } from "../Redux/Action/ActionCart";
+
 import ListCart from "./Component/ListCart";
+
 import CartAPI from "../API/CartAPI";
 
+import "./Cart.css";
+
+const parsePrice = (price) => {
+  return Number(String(price || "").replace(/\D/g, "")) || 0;
+};
+
 const calculateTotal = (carts = []) => {
-  let subTotal = 0;
-
-  carts.forEach((value) => {
-    const price = value.priceProduct
-      .toString()
-      .replace(/\./g, "")
-      .replace(" đ", "");
-
-    subTotal += parseInt(price, 10) * parseInt(value.count, 10);
-  });
-
-  return subTotal;
+  return carts.reduce(
+    (total, item) =>
+      total + parsePrice(item.priceProduct) * Number(item.count || 0),
+    0,
+  );
 };
 
 function Cart() {
+  const dispatch = useDispatch();
 
-  const listCart = useSelector((state) => state.Cart.listCart);
+  const reduxCart = useSelector((state) => state.Cart.listCart);
+
+  const idUser = sessionStorage.getItem("id_user");
 
   const [cart, setCart] = useState([]);
 
-  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const [redirect, setRedirect] = useState(false);
-
-  const dispatch = useDispatch();
-
-  const idUser = sessionStorage.getItem("id_user");
 
 
   const fetchCartFromAPI = useCallback(async () => {
     if (!idUser) {
+      setLoading(false);
+
       return;
     }
 
     try {
+      setLoading(true);
+
       const params = {
         idUser,
       };
@@ -53,39 +59,43 @@ function Cart() {
 
       const response = await CartAPI.getCarts(query);
 
-      const carts = Array.isArray(response) ? response : [];
-
-      setCart(carts);
-
-      setTotal(calculateTotal(carts));
+      setCart(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error("Load cart error:", error);
 
       setCart([]);
-      setTotal(0);
+    } finally {
+      setLoading(false);
     }
   }, [idUser]);
 
   useEffect(() => {
-
     if (idUser) {
       fetchCartFromAPI();
 
       return;
     }
 
-    const carts = Array.isArray(listCart) ? listCart : [];
+    setCart(Array.isArray(reduxCart) ? reduxCart : []);
 
-    setCart(carts);
+    setLoading(false);
+  }, [idUser, reduxCart, fetchCartFromAPI]);
 
-    setTotal(calculateTotal(carts));
-  }, [idUser, listCart, fetchCartFromAPI]);
+
+  const total = useMemo(() => calculateTotal(cart), [cart]);
+
+  const totalItems = useMemo(
+    () => cart.reduce((sum, item) => sum + (Number(item.count) || 0), 0),
+    [cart],
+  );
+
 
   const onDeleteCart = async (getUser, getProduct) => {
     if (idUser) {
       try {
         const params = {
           idUser: getUser,
+
           idProduct: getProduct,
         };
 
@@ -95,13 +105,13 @@ function Cart() {
 
         await fetchCartFromAPI();
 
+        window.dispatchEvent(new Event("cartUpdated"));
+
         alertify.set("notifier", "position", "bottom-left");
 
         alertify.success("Bạn đã xóa sản phẩm thành công!");
       } catch (error) {
         console.error("Delete cart error:", error);
-
-        alertify.set("notifier", "position", "bottom-left");
 
         alertify.error("Xóa sản phẩm thất bại!");
       }
@@ -109,26 +119,32 @@ function Cart() {
       return;
     }
 
-    const data = {
-      idProduct: getProduct,
-      idUser: getUser,
-    };
+    dispatch(
+      deleteCart({
+        idProduct: getProduct,
 
-    const action = deleteCart(data);
-
-    dispatch(action);
+        idUser: getUser,
+      }),
+    );
 
     alertify.set("notifier", "position", "bottom-left");
 
     alertify.success("Bạn đã xóa sản phẩm thành công!");
   };
 
+
   const onUpdateCount = async (getUser, getProduct, getCount) => {
+    if (Number(getCount) < 1) {
+      return;
+    }
+
     if (idUser) {
       try {
         const params = {
           idUser: getUser,
+
           idProduct: getProduct,
+
           count: getCount,
         };
 
@@ -138,13 +154,13 @@ function Cart() {
 
         await fetchCartFromAPI();
 
+        window.dispatchEvent(new Event("cartUpdated"));
+
         alertify.set("notifier", "position", "bottom-left");
 
         alertify.success("Bạn đã cập nhật giỏ hàng thành công!");
       } catch (error) {
         console.error("Update cart error:", error);
-
-        alertify.set("notifier", "position", "bottom-left");
 
         alertify.error("Cập nhật giỏ hàng thất bại!");
       }
@@ -152,20 +168,21 @@ function Cart() {
       return;
     }
 
-    const data = {
-      idProduct: getProduct,
-      idUser: getUser,
-      count: getCount,
-    };
+    dispatch(
+      updateCart({
+        idProduct: getProduct,
 
-    const action = updateCart(data);
+        idUser: getUser,
 
-    dispatch(action);
+        count: getCount,
+      }),
+    );
 
     alertify.set("notifier", "position", "bottom-left");
 
     alertify.success("Bạn đã cập nhật giỏ hàng thành công!");
   };
+
 
   const onCheckout = () => {
     if (!idUser) {
@@ -187,122 +204,137 @@ function Cart() {
     setRedirect(true);
   };
 
-  return (
-    <div className="container">
-      {/* HEADER */}
-      <section className="py-5 bg-light">
-        <div className="container">
-          <div className="row px-4 px-lg-5 py-lg-4 align-items-center">
-            <div className="col-lg-6">
-              <h1 className="h2 text-uppercase mb-0">Cart</h1>
-            </div>
+  if (redirect) {
+    return <Redirect to="/checkout" />;
+  }
 
-            <div className="col-lg-6 text-lg-right">
-              <nav aria-label="breadcrumb">
-                <ol className="breadcrumb justify-content-lg-end mb-0 px-0">
-                  <li className="breadcrumb-item active" aria-current="page">
-                    Cart
-                  </li>
-                </ol>
-              </nav>
-            </div>
+  return (
+    <main className="cart-page">
+
+      <section className="cart-heading">
+        <div className="shop-container">
+          <div className="cart-breadcrumb">
+            <Link to="/">Home</Link>
+
+            <i className="fas fa-chevron-right" />
+
+            <span>Cart</span>
           </div>
+
+          <h1>Shopping Cart</h1>
+
+          <p>Review your items before proceeding to checkout.</p>
         </div>
       </section>
 
-      {/* CART */}
-      <section className="py-5">
-        <h2 className="h5 text-uppercase mb-4">Shopping cart</h2>
+      <section className="cart-content">
+        <div className="shop-container">
+          {loading ? (
+            <div className="cart-loading">
+              <div className="cart-spinner" />
 
-        <div className="row">
-          <div className="col-lg-8 mb-4 mb-lg-0">
-            <ListCart
-              listCart={cart}
-              onDeleteCart={onDeleteCart}
-              onUpdateCount={onUpdateCount}
-            />
+              <p>Loading cart...</p>
+            </div>
+          ) : cart.length === 0 ? (
+            <div className="cart-empty">
+              <div className="cart-empty-icon">
+                <i className="fas fa-shopping-bag" />
+              </div>
 
-            <div className="bg-light px-4 py-3">
-              <div className="row align-items-center text-center">
-                <div className="col-md-6 mb-3 mb-md-0 text-md-left">
-                  <Link
-                    className="btn btn-link p-0 text-dark btn-sm"
-                    to="/shop"
-                  >
-                    <i className="fas fa-long-arrow-alt-left mr-2"></i>
-                    Continue shopping
+              <h2>Your cart is empty</h2>
+
+              <p>
+                Explore our camera collection and add your favorite products.
+              </p>
+
+              <Link to="/shop" className="shop-btn shop-btn-primary">
+                Start Shopping
+              </Link>
+            </div>
+          ) : (
+            <div className="cart-layout">
+
+              <div className="cart-products">
+                <div className="cart-products-header">
+                  <div>
+                    <h2>Your Items</h2>
+
+                    <span>
+                      {totalItems} {totalItems === 1 ? "item" : "items"}
+                    </span>
+                  </div>
+
+                  <Link to="/shop" className="cart-continue-link">
+                    <i className="fas fa-arrow-left" />
+                    Continue Shopping
                   </Link>
                 </div>
 
-                <div className="col-md-6 text-md-right">
-                  {redirect && <Redirect to="/checkout" />}
+                <ListCart
+                  listCart={cart}
+                  onDeleteCart={onDeleteCart}
+                  onUpdateCount={onUpdateCount}
+                />
+              </div>
 
-                  <button
-                    type="button"
-                    className="btn btn-outline-dark btn-sm"
-                    onClick={onCheckout}
-                  >
-                    Proceed to checkout
-                    <i className="fas fa-long-arrow-alt-right ml-2"></i>
-                  </button>
+
+              <aside className="cart-summary">
+                <span className="cart-summary-label">Order summary</span>
+
+                <h2>Cart Total</h2>
+
+                <div className="cart-summary-row">
+                  <span>Items</span>
+
+                  <strong>{totalItems}</strong>
                 </div>
-              </div>
+
+                <div className="cart-summary-row">
+                  <span>Subtotal</span>
+
+                  <strong>
+                    {total.toLocaleString("vi-VN")}
+                    {" ₫"}
+                  </strong>
+                </div>
+
+                <div className="cart-summary-row">
+                  <span>Shipping</span>
+
+                  <strong className="cart-free">Free</strong>
+                </div>
+
+                <div className="cart-summary-divider" />
+
+                <div className="cart-summary-total">
+                  <span>Total</span>
+
+                  <strong>
+                    {total.toLocaleString("vi-VN")}
+                    {" ₫"}
+                  </strong>
+                </div>
+
+                <button
+                  type="button"
+                  className="cart-checkout-button"
+                  onClick={onCheckout}
+                >
+                  Proceed to Checkout
+                  <i className="fas fa-arrow-right" />
+                </button>
+
+                <div className="cart-secure">
+                  <i className="fas fa-lock" />
+
+                  <span>Secure checkout</span>
+                </div>
+              </aside>
             </div>
-          </div>
-
-          {/* TOTAL */}
-          <div className="col-lg-4">
-            <div className="card border-0 rounded-0 p-lg-4 bg-light">
-              <div className="card-body">
-                <h5 className="text-uppercase mb-4">Cart total</h5>
-
-                <ul className="list-unstyled mb-0">
-                  <li className="d-flex align-items-center justify-content-between">
-                    <strong className="text-uppercase small font-weight-bold">
-                      Subtotal
-                    </strong>
-
-                    <span className="text-muted small">
-                      {total.toLocaleString("vi-VN")}đ
-                    </span>
-                  </li>
-
-                  <li className="border-bottom my-2"></li>
-
-                  <li className="d-flex align-items-center justify-content-between mb-4">
-                    <strong className="text-uppercase small font-weight-bold">
-                      Total
-                    </strong>
-
-                    <span>{total.toLocaleString("vi-VN")}đ</span>
-                  </li>
-
-                  <li>
-                    <form onSubmit={(e) => e.preventDefault()}>
-                      <div className="form-group mb-0">
-                        <input
-                          className="form-control"
-                          type="text"
-                          placeholder="Enter your coupon"
-                        />
-
-                        <button
-                          className="btn btn-dark btn-sm btn-block"
-                          type="submit"
-                        >
-                          <i className="fas fa-gift mr-2"></i>
-                          Apply coupon
-                        </button>
-                      </div>
-                    </form>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
-    </div>
+    </main>
   );
 }
 
