@@ -66,6 +66,7 @@ function Shop() {
     category: "all",
   });
 
+  const [allProducts, setAllProducts] = useState([]);
 
   const handlerChangePage = (value) => {
     const page = Number(value);
@@ -167,21 +168,30 @@ function Shop() {
   }, [pagination.page, pagination.count, pagination.category]);
 
 
-  useEffect(() => {
-    let filtered = [...temp];
+useEffect(() => {
+  let source = searchTerm.trim() ? [...allProducts] : [...temp];
 
-    if (searchTerm.trim()) {
-      const keyword = searchTerm.trim().toLowerCase();
+  if (searchTerm.trim() && activeCategory !== "all") {
+    source = source.filter((item) => {
+      const categoryId =
+        typeof item.category === "object" ? item.category?._id : item.category;
 
-      filtered = filtered.filter((item) =>
-        item.name?.toLowerCase().includes(keyword),
-      );
-    }
+      return String(categoryId) === String(activeCategory);
+    });
+  }
 
-    const sorted = sortProducts(filtered, sort);
+  if (searchTerm.trim()) {
+    const keyword = searchTerm.trim().toLowerCase();
 
-    setProducts(sorted);
-  }, [temp, sort, searchTerm]);
+    source = source.filter((item) =>
+      item.name?.toLowerCase().includes(keyword),
+    );
+  }
+
+  const sorted = sortProducts(source, sort);
+
+  setProducts(sorted);
+}, [temp, allProducts, searchTerm, sort, activeCategory]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -197,6 +207,22 @@ function Shop() {
     };
 
     fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchAllProducts = async () => {
+      try {
+        const response = await ProductAPI.getAPI();
+
+        setAllProducts(Array.isArray(response) ? response : []);
+      } catch (error) {
+        console.error("Load search products error:", error);
+
+        setAllProducts([]);
+      }
+    };
+
+    fetchAllProducts();
   }, []);
 
 
@@ -240,13 +266,17 @@ function Shop() {
                 <i className="fas fa-sliders-h" />
                 Filters
               </button>
-
-              <Search handlerSearch={handlerSearch} products={temp} />
+              <Search
+                handlerSearch={handlerSearch}
+                products={allProducts}
+              />{" "}
             </div>
 
             <div className="shop-toolbar-right">
               <div className="shop-result-count">
-                <strong>{totalProducts}</strong>
+                <strong>
+                  {searchTerm.trim() ? products.length : totalProducts}
+                </strong>
 
                 <span>products</span>
               </div>
@@ -439,7 +469,7 @@ function Shop() {
                 <>
                   <Products products={products} />
 
-                  {products.length > 0 && (
+                  {products.length > 0 && !searchTerm.trim() && (
                     <Pagination
                       pagination={pagination}
                       handlerChangePage={handlerChangePage}

@@ -13,73 +13,46 @@ import CommentAPI from "../API/CommentAPI";
 
 import { addCart } from "../Redux/Action/ActionCart";
 
-
-const renderCommentStars = (commentItem) => {
-  const rating = Number(commentItem.star);
-
-  if (Number.isFinite(rating) && rating > 0) {
-    return [1, 2, 3, 4, 5].map((starNumber) => (
-      <li key={starNumber} className="list-inline-item m-0">
-        <i
-          className={
-            starNumber <= rating
-              ? "fas fa-star text-warning"
-              : "far fa-star text-muted"
-          }
-        ></i>
-      </li>
-    ));
-  }
-
-  const legacyStars = [
-    commentItem.star1,
-    commentItem.star2,
-    commentItem.star3,
-    commentItem.star4,
-    commentItem.star5,
-  ];
-
-  return legacyStars.map((starClass, index) => (
-    <li key={index} className="list-inline-item m-0">
-      <i className={starClass || "far fa-star text-muted"}></i>
-    </li>
-  ));
-};
+import "./Detail.css";
 
 function Detail() {
   const { id } = useParams();
 
   const dispatch = useDispatch();
 
-  const id_user = useSelector((state) => state.Cart.id_user);
-
+  const guestUserId = useSelector((state) => state.Cart.id_user);
 
   const [detail, setDetail] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const [text, setText] = useState(1);
+  const [quantity, setQuantity] = useState(1);
 
-  const [star, setStar] = useState(1);
-
+  const [star, setStar] = useState(5);
   const [comment, setComment] = useState("");
-
   const [listComment, setListComment] = useState([]);
 
-  const [review, setReview] = useState("description");
+  const [activeTab, setActiveTab] = useState("description");
 
   const [recentProducts, setRecentProducts] = useState([]);
 
   useEffect(() => {
-    const fetchProductDetail = async () => {
+    const fetchProduct = async () => {
       try {
+        setLoading(true);
+
         const response = await ProductAPI.getDetail(id);
 
         setDetail(response || {});
       } catch (error) {
         console.error("Load product detail error:", error);
+
+        setDetail({});
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchProductDetail();
+    fetchProduct();
   }, [id]);
 
   useEffect(() => {
@@ -102,7 +75,7 @@ function Detail() {
 
       setListComment(Array.isArray(response) ? response : []);
     } catch (error) {
-      console.error("Load comments error:", error);
+      console.error("Load reviews error:", error);
 
       setListComment([]);
     }
@@ -112,177 +85,9 @@ function Detail() {
     fetchComments();
   }, [fetchComments]);
 
-  const onChangeStar = (e) => {
-    const value = Number(e.target.value);
-
-    if (value >= 1 && value <= 5) {
-      setStar(value);
-    }
-  };
-
-  const onChangeComment = (e) => {
-    setComment(e.target.value);
-  };
-
-
-  const handlerComment = async () => {
-    const sessionUserId = sessionStorage.getItem("id_user");
-
-    const fullname = sessionStorage.getItem("name_user");
-
-    if (!sessionUserId) {
-      alertify.set("notifier", "position", "bottom-left");
-
-      alertify.error("Vui Lòng Kiểm Tra Đăng Nhập!");
-
-      return;
-    }
-
-    if (!comment.trim()) {
-      alertify.set("notifier", "position", "bottom-left");
-
-      alertify.error("Vui lòng nhập nội dung bình luận!");
-
-      return;
-    }
-
-    try {
-      const params = {
-        idProduct: id,
-
-        idUser: sessionUserId,
-
-        fullname: fullname || "User",
-
-        content: comment.trim(),
-
-        star,
-      };
-
-      const query = "?" + queryString.stringify(params);
-
-      await CommentAPI.postCommentProduct(query);
-
-      setComment("");
-
-      setStar(1);
-
-      await fetchComments();
-
-      alertify.set("notifier", "position", "bottom-left");
-
-      alertify.success("Bình luận thành công!");
-    } catch (error) {
-      console.error("Send comment error:", error);
-
-      alertify.set("notifier", "position", "bottom-left");
-
-      alertify.error("Gửi bình luận thất bại!");
-    }
-  };
-
-  const onChangeText = (e) => {
-    const value = e.target.value;
-
-    if (value === "") {
-      setText("");
-
-      return;
-    }
-
-    const numberValue = Number(value);
-
-    if (Number.isInteger(numberValue) && numberValue >= 1) {
-      setText(numberValue);
-    }
-  };
-
-  const upText = () => {
-    const current = Number(text) || 1;
-
-    setText(current + 1);
-  };
-
-  const downText = () => {
-    const current = Number(text) || 1;
-
-    if (current <= 1) {
-      return;
-    }
-
-    setText(current - 1);
-  };
-
-  const addToCart = async () => {
-    if (!detail || !detail._id) {
-      alertify.set("notifier", "position", "bottom-left");
-
-      alertify.error("Không tìm thấy sản phẩm!");
-
-      return;
-    }
-
-    const sessionUserId = sessionStorage.getItem("id_user");
-
-    const idUserCart = sessionUserId || id_user;
-
-    const count = Number(text) || 1;
-
-    const data = {
-      idUser: idUserCart,
-
-      idProduct: detail._id,
-
-      nameProduct: detail.name,
-
-      priceProduct: detail.price,
-
-      count,
-
-      img: detail.img1,
-
-      description: detail.description,
-    };
-
-    try {
-
-      if (sessionUserId) {
-        const params = {
-          idUser: sessionUserId,
-
-          idProduct: detail._id,
-
-          count,
-        };
-
-        const query = "?" + queryString.stringify(params);
-
-        await CartAPI.postAddToCart(query);
-      }
-      else {
-        const action = addCart(data);
-
-        dispatch(action);
-      }
-
-      alertify.set("notifier", "position", "bottom-left");
-
-      alertify.success("Bạn Đã Thêm Hàng Thành Công!");
-    } catch (error) {
-      console.error("Add to cart error:", error);
-
-      alertify.set("notifier", "position", "bottom-left");
-
-      alertify.error("Thêm sản phẩm thất bại!");
-    }
-  };
-
-  const handlerReview = (value) => {
-    setReview(value);
-  };
 
   useEffect(() => {
-    if (!detail || !detail._id) {
+    if (!detail?._id) {
       return;
     }
 
@@ -314,436 +119,532 @@ function Detail() {
       viewed = [];
     }
 
-    const filtered = viewed.filter((item) => item._id !== id);
-
-    setRecentProducts(filtered);
+    setRecentProducts(viewed.filter((item) => item._id !== id));
   }, [id, detail]);
+
 
   const categoryName =
     typeof detail.category === "object"
-      ? detail.category?.category || detail.category?.name || ""
-      : detail.category || "";
+      ? detail.category?.category || detail.category?.name || "Camera"
+      : detail.category || "Camera";
 
+
+  const decreaseQuantity = () => {
+    setQuantity((current) => Math.max(1, Number(current) - 1));
+  };
+
+  const increaseQuantity = () => {
+    setQuantity((current) => Number(current) + 1);
+  };
+
+  const handleQuantityChange = (event) => {
+    const value = Number(event.target.value);
+
+    if (Number.isInteger(value) && value >= 1) {
+      setQuantity(value);
+    }
+  };
+
+
+  const addToCart = async () => {
+    if (!detail?._id) {
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Product not found.");
+
+      return;
+    }
+
+    const sessionUserId = sessionStorage.getItem("id_user");
+
+    const idUserCart = sessionUserId || guestUserId;
+
+    const count = Number(quantity) || 1;
+
+    const data = {
+      idUser: idUserCart,
+      idProduct: detail._id,
+      nameProduct: detail.name,
+      priceProduct: detail.price,
+      count,
+      img: detail.img1,
+      description: detail.description,
+    };
+
+    try {
+      if (sessionUserId) {
+        const params = {
+          idUser: sessionUserId,
+          idProduct: detail._id,
+          count,
+        };
+
+        const query = "?" + queryString.stringify(params);
+
+        await CartAPI.postAddToCart(query);
+      } else {
+        dispatch(addCart(data));
+      }
+
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.success("Product added to cart successfully!");
+    } catch (error) {
+      console.error("Add to cart error:", error);
+
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Unable to add product to cart.");
+    }
+  };
+
+
+  const handleComment = async () => {
+    const sessionUserId = sessionStorage.getItem("id_user");
+
+    const fullname = sessionStorage.getItem("name_user");
+
+    if (!sessionUserId) {
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Please sign in before leaving a review.");
+
+      return;
+    }
+
+    if (!comment.trim()) {
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Please enter your review.");
+
+      return;
+    }
+
+    try {
+      const params = {
+        idProduct: id,
+        idUser: sessionUserId,
+        fullname: fullname || "User",
+        content: comment.trim(),
+        star,
+      };
+
+      const query = "?" + queryString.stringify(params);
+
+      await CommentAPI.postCommentProduct(query);
+
+      setComment("");
+      setStar(5);
+
+      await fetchComments();
+
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.success("Your review has been submitted.");
+    } catch (error) {
+      console.error("Submit review error:", error);
+
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Unable to submit your review.");
+    }
+  };
+
+
+  const renderReviewStars = (reviewItem) => {
+    const rating = Number(reviewItem.star);
+
+    return [1, 2, 3, 4, 5].map((value) => (
+      <i
+        key={value}
+        className={value <= rating ? "fas fa-star" : "far fa-star"}
+      />
+    ));
+  };
+
+  const formatDate = (value) => {
+    if (!value) {
+      return "";
+    }
+
+    return new Date(value).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+
+  if (loading) {
+    return (
+      <main className="detail-page">
+        <div className="detail-loading">
+          <div className="detail-loading-spinner" />
+
+          <p>Loading product...</p>
+        </div>
+      </main>
+    );
+  }
+
+
+  if (!detail?._id) {
+    return (
+      <main className="detail-page">
+        <div className="shop-container">
+          <div className="detail-not-found">
+            <i className="fas fa-camera" />
+
+            <h2>Product not found</h2>
+
+            <p>The product you are looking for is no longer available.</p>
+
+            <Link to="/shop" className="shop-btn shop-btn-primary">
+              Back to Shop
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <section className="py-5">
-      <div className="container">
+    <main className="detail-page">
 
-        <div className="row mb-5">
+      <section className="detail-heading">
+        <div className="shop-container">
+          <div className="detail-breadcrumb">
+            <Link to="/">Home</Link>
 
-          <div className="col-lg-6">
-            <div
-              className="row m-sm-0"
-              style={{
-                position: "relative",
-              }}
-            >
+            <i className="fas fa-chevron-right" />
 
-              <Link
-                to="/shop"
-                className="back-button-circle"
-                style={{
-                  position: "absolute",
+            <Link to="/shop">Shop</Link>
 
-                  top: "-50px",
+            <i className="fas fa-chevron-right" />
 
-                  left: "-25px",
+            <span>{detail.name}</span>
+          </div>
+        </div>
+      </section>
 
-                  zIndex: 100,
+      <section className="detail-product-section">
+        <div className="shop-container">
+          <div className="detail-product-grid">
 
-                  cursor: "pointer",
-
-                  width: "42px",
-
-                  height: "42px",
-
-                  backgroundColor: "rgba(255, 255, 255, 0.9)",
-
-                  borderRadius: "50%",
-
-                  display: "flex",
-
-                  alignItems: "center",
-
-                  justifyContent: "center",
-
-                  boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-
-                  border: "1px solid #ddd",
-
-                  textDecoration: "none",
-                }}
-                aria-label="Back to shop"
-              >
-                <i
-                  className="fas fa-chevron-left"
-                  style={{
-                    color: "#333",
-
-                    fontSize: "18px",
-                  }}
-                ></i>
+            <div className="detail-gallery">
+              <Link to="/shop" className="detail-back-button">
+                <i className="fas fa-arrow-left" />
+                Back to Shop
               </Link>
 
-              <div
-                id="carouselExampleControls"
-                className="carousel slide col-sm-10 order-1 order-sm-2"
-                data-ride="carousel"
-              >
-                <div className="carousel-inner owl-carousel product-slider">
-                  <div className="carousel-item active">
-                    {detail.img1 && (
-                      <img
-                        className="d-block w-100"
-                        src={detail.img1}
-                        alt={detail.name || "Product"}
-                      />
-                    )}
+              <div className="detail-main-image">
+                {detail.img1 ? (
+                  <img src={detail.img1} alt={detail.name} />
+                ) : (
+                  <div className="detail-image-placeholder">
+                    <i className="fas fa-camera" />
+
+                    <span>No image available</span>
                   </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="carousel-control-prev"
-                  data-target="#carouselExampleControls"
-                  data-slide="prev"
-                  aria-label="Previous image"
-                >
-                  <span
-                    className="carousel-control-prev-icon"
-                    aria-hidden="true"
-                  ></span>
-
-                  <span className="sr-only">Previous</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="carousel-control-next"
-                  data-target="#carouselExampleControls"
-                  data-slide="next"
-                  aria-label="Next image"
-                >
-                  <span
-                    className="carousel-control-next-icon"
-                    aria-hidden="true"
-                  ></span>
-
-                  <span className="sr-only">Next</span>
-                </button>
+                )}
               </div>
             </div>
-          </div>
 
-          <div className="col-lg-6">
+            <div className="detail-information">
+              <span className="detail-category">{categoryName}</span>
 
-            <ul className="list-inline mb-2">
-              {[1, 2, 3, 4, 5].map((value) => (
-                <li key={value} className="list-inline-item m-0">
-                  <i className="fas fa-star small text-warning"></i>
-                </li>
-              ))}
-            </ul>
+              <div className="detail-rating-row">
+                <div className="detail-stars">
+                  <i className="fas fa-star" />
+                  <i className="fas fa-star" />
+                  <i className="fas fa-star" />
+                  <i className="fas fa-star" />
+                  <i className="fas fa-star" />
+                </div>
 
-            <h1>{detail.name}</h1>
+                <span>
+                  {listComment.length}{" "}
+                  {listComment.length === 1 ? "review" : "reviews"}
+                </span>
+              </div>
 
-            <p className="text-muted lead">{detail.price}</p>
+              <h1>{detail.name}</h1>
 
-            <p className="text-small mb-4">
-              {detail.description || "No description available."}
-            </p>
+              <div className="detail-price">{detail.price}</div>
 
-            <div className="row align-items-stretch mb-4">
-              <div className="col-sm-5 pr-sm-0">
-                <div className="border d-flex align-items-center justify-content-between py-1 px-3 bg-white border-white">
-                  <span className="small text-uppercase text-gray mr-4 no-select">
-                    Quantity
-                  </span>
+              <p className="detail-summary">
+                {detail.description ||
+                  "Discover this camera and explore its features, performance and creative possibilities."}
+              </p>
 
-                  <div className="quantity">
-                    <button
-                      type="button"
-                      className="dec-btn p-0"
-                      style={{
-                        cursor: "pointer",
-                      }}
-                      onClick={downText}
-                      aria-label="Decrease quantity"
-                    >
-                      <i className="fas fa-caret-left"></i>
-                    </button>
 
-                    <input
-                      className="form-control border-0 shadow-0 p-0"
-                      type="number"
-                      min="1"
-                      value={text}
-                      onChange={onChangeText}
-                      aria-label="Product quantity"
-                    />
+              <div className="detail-benefits">
+                <div>
+                  <i className="fas fa-shield-alt" />
 
-                    <button
-                      type="button"
-                      className="inc-btn p-0"
-                      style={{
-                        cursor: "pointer",
-                      }}
-                      onClick={upText}
-                      aria-label="Increase quantity"
-                    >
-                      <i className="fas fa-caret-right"></i>
-                    </button>
-                  </div>
+                  <span>Genuine product</span>
+                </div>
+
+                <div>
+                  <i className="fas fa-shipping-fast" />
+
+                  <span>Fast delivery</span>
+                </div>
+
+                <div>
+                  <i className="fas fa-headset" />
+
+                  <span>Customer support</span>
                 </div>
               </div>
 
 
-              <div className="col-sm-3 pl-sm-0">
+              <div className="detail-purchase">
+                <div className="detail-quantity">
+                  <button
+                    type="button"
+                    onClick={decreaseQuantity}
+                    aria-label="Decrease quantity"
+                  >
+                    <i className="fas fa-minus" />
+                  </button>
+
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={handleQuantityChange}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={increaseQuantity}
+                    aria-label="Increase quantity"
+                  >
+                    <i className="fas fa-plus" />
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  className="btn btn-dark btn-sm btn-block d-flex align-items-center justify-content-center px-0 text-white"
+                  className="detail-add-cart"
                   onClick={addToCart}
                 >
-                  Add to cart
+                  <i className="fas fa-shopping-bag" />
+                  Add to Cart
+                </button>
+
+                <button
+                  type="button"
+                  className="detail-wishlist"
+                  aria-label="Add to wishlist"
+                >
+                  <i className="far fa-heart" />
                 </button>
               </div>
 
 
-              <button type="button" className="btn btn-link text-dark p-1 mb-4">
-                <i className="far fa-heart mr-2"></i>
-                Add to wish list
-              </button>
+              <div className="detail-meta">
+                <div>
+                  <span>Category</span>
 
-              <br />
+                  <strong>{categoryName}</strong>
+                </div>
 
+                <div>
+                  <span>Product ID</span>
 
-              <ul className="list-unstyled small d-inline-block">
-                <li className="px-3 py-2 mb-1 bg-white">
-                  <strong className="text-uppercase">SKU:</strong>
+                  <strong>{detail._id?.slice(-8).toUpperCase()}</strong>
+                </div>
 
-                  <span className="ml-2 text-muted">039</span>
-                </li>
+                <div>
+                  <span>Availability</span>
 
-                <li className="px-3 py-2 mb-1 bg-white text-muted">
-                  <strong className="text-uppercase text-dark">
-                    Category:
+                  <strong className="detail-stock">
+                    <i className="fas fa-circle" />
+                    In stock
                   </strong>
-
-                  <span className="ml-2">{categoryName || "N/A"}</span>
-                </li>
-
-                <li className="px-3 py-2 mb-1 bg-white text-muted">
-                  <strong className="text-uppercase text-dark">Tags:</strong>
-
-                  <span className="ml-2">Innovation</span>
-                </li>
-              </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </section>
 
-        <div className="form-group">
-          <label htmlFor="comment">Comment:</label>
 
-          <textarea
-            id="comment"
-            className="form-control"
-            rows="3"
-            onChange={onChangeComment}
-            value={comment}
-          ></textarea>
-        </div>
-
-        <div className="d-flex justify-content-between">
-
-          <div className="d-flex w-25">
-            <label htmlFor="star" className="mt-2">
-              Evaluate:
-            </label>
-            &nbsp; &nbsp;
-            <input
-              id="star"
-              className="form-control w-25"
-              type="number"
-              min="1"
-              max="5"
-              value={star}
-              onChange={onChangeStar}
-            />
-            &nbsp; &nbsp;
-            <span className="mt-2">Star</span>
-          </div>
-
-          <div>
+      <section className="detail-tabs-section">
+        <div className="shop-container">
+          <div className="detail-tabs">
             <button
               type="button"
-              className="btn btn-dark btn-sm btn-block px-0 text-white"
-              style={{
-                width: "12rem",
-              }}
-              onClick={handlerComment}
-            >
-              Send
-            </button>
-          </div>
-        </div>
-
-        <br />
-
-
-        <ul className="nav nav-tabs border-0">
-
-          <li className="nav-item">
-            <button
-              type="button"
-              className="nav-link fix_comment border-0"
-              onClick={() => handlerReview("description")}
-              style={
-                review === "description"
-                  ? {
-                      backgroundColor: "#383838",
-
-                      color: "#ffffff",
-                    }
-                  : {
-                      backgroundColor: "transparent",
-
-                      color: "#383838",
-                    }
-              }
+              className={activeTab === "description" ? "active" : ""}
+              onClick={() => setActiveTab("description")}
             >
               Description
             </button>
-          </li>
 
-          <li className="nav-item">
             <button
               type="button"
-              className="nav-link fix_comment border-0"
-              onClick={() => handlerReview("review")}
-              style={
-                review === "review"
-                  ? {
-                      backgroundColor: "#383838",
-
-                      color: "#ffffff",
-                    }
-                  : {
-                      backgroundColor: "transparent",
-
-                      color: "#383838",
-                    }
-              }
+              className={activeTab === "reviews" ? "active" : ""}
+              onClick={() => setActiveTab("reviews")}
             >
               Reviews
+              <span>{listComment.length}</span>
             </button>
-          </li>
-        </ul>
+          </div>
 
-        <div className="tab-content mb-5">
-          {review === "description" ? (
-            <div className="tab-pane fade show active">
-              <div className="p-4 p-lg-5 bg-white">
-                <h6 className="text-uppercase">Product description</h6>
+          {activeTab === "description" ? (
+            <div className="detail-description-panel">
+              <div>
+                <span className="section-eyebrow">Product information</span>
 
-                <p className="text-muted text-small mb-0">
-                  {detail.description || "No description available."}
-                </p>
+                <h2>About this camera</h2>
               </div>
+
+              <p>
+                {detail.description ||
+                  "No additional description is available for this product."}
+              </p>
             </div>
           ) : (
-            <div className="tab-pane fade show active">
-              <div className="p-4 p-lg-5 bg-white">
-                <div className="row">
-                  <div className="col-lg-8">
-                    {listComment.length > 0 ? (
-                      listComment.map((value) => (
-                        <div className="media mb-3" key={value._id}>
-                          <img
-                            className="rounded-circle"
-                            src="https://img.icons8.com/color/36/000000/administrator-male.png"
-                            alt="User avatar"
-                            width="50"
-                          />
+            <div className="detail-reviews-layout">
 
-                          <div className="media-body ml-3">
-                            <h6 className="mb-0 text-uppercase">
-                              {value.fullname}
-                            </h6>
+              <div className="detail-review-list">
+                <div className="detail-review-heading">
+                  <div>
+                    <span className="section-eyebrow">Customer feedback</span>
 
-                            <p className="small text-muted mb-0 text-uppercase">
-                              {value.createdAt
-                                ? new Date(value.createdAt).toLocaleDateString(
-                                    "vi-VN",
-                                  )
-                                : ""}
-                            </p>
+                    <h2>Reviews</h2>
+                  </div>
 
-                            <ul className="list-inline mb-1 text-xs">
-                              {renderCommentStars(value)}
-                            </ul>
+                  <span className="detail-review-count">
+                    {listComment.length}{" "}
+                    {listComment.length === 1 ? "review" : "reviews"}
+                  </span>
+                </div>
 
-                            <p className="text-small mb-0 text-muted">
-                              {value.content}
-                            </p>
+                {listComment.length > 0 ? (
+                  listComment.map((item) => (
+                    <article className="detail-review-card" key={item._id}>
+                      <div className="detail-review-avatar">
+                        {item.fullname?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
+
+                      <div className="detail-review-body">
+                        <div className="detail-review-top">
+                          <div>
+                            <strong>{item.fullname || "Customer"}</strong>
+
+                            <span>{formatDate(item.createdAt)}</span>
+                          </div>
+
+                          <div className="detail-review-stars">
+                            {renderReviewStars(item)}
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-muted">Chưa có đánh giá nào.</p>
-                    )}
+
+                        <p>{item.content}</p>
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <div className="detail-no-reviews">
+                    <i className="far fa-comment-dots" />
+
+                    <h3>No reviews yet</h3>
+
+                    <p>
+                      Be the first to share your experience with this product.
+                    </p>
                   </div>
-                </div>
+                )}
               </div>
+
+              <aside className="detail-review-form">
+                <span className="section-eyebrow">Share your experience</span>
+
+                <h3>Write a review</h3>
+
+                <p>Tell other customers what you think about this product.</p>
+
+                <label>Your rating</label>
+
+                <div className="detail-rating-picker">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      type="button"
+                      key={value}
+                      className={value <= star ? "active" : ""}
+                      onClick={() => setStar(value)}
+                      aria-label={`${value} stars`}
+                    >
+                      <i className="fas fa-star" />
+                    </button>
+                  ))}
+                </div>
+
+                <label htmlFor="reviewText">Your review</label>
+
+                <textarea
+                  id="reviewText"
+                  rows="5"
+                  value={comment}
+                  onChange={(event) => setComment(event.target.value)}
+                  placeholder="Write your review here..."
+                />
+
+                <button
+                  type="button"
+                  className="detail-submit-review"
+                  onClick={handleComment}
+                >
+                  Submit Review
+                </button>
+              </aside>
             </div>
           )}
         </div>
+      </section>
 
 
-        <div className="mt-5">
-          <h5 className="text-uppercase mb-4">Recently Viewed</h5>
+      {recentProducts.length > 0 && (
+        <section className="detail-recent-section">
+          <div className="shop-container">
+            <div className="detail-section-heading">
+              <div>
+                <span className="section-eyebrow">Keep exploring</span>
 
-          <div className="row">
-            {recentProducts.length > 0 ? (
-              recentProducts.map((item) => (
-                <div className="col-lg-3 col-md-4 col-6 mb-4" key={item._id}>
-                  <div className="card border-0 shadow-sm h-100">
-                    <Link to={`/detail/${item._id}`}>
-                      <img
-                        src={item.img1}
-                        className="card-img-top"
-                        style={{
-                          height: "200px",
-
-                          objectFit: "cover",
-                        }}
-                        alt={item.name}
-                      />
-                    </Link>
-
-                    <div className="card-body p-2">
-                      <h6
-                        style={{
-                          fontSize: "14px",
-                        }}
-                      >
-                        {item.name}
-                      </h6>
-
-                      <p className="text-danger mb-0">{item.price}</p>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="col-12">
-                <p className="text-muted">Chưa có sản phẩm nào</p>
+                <h2>Recently viewed</h2>
               </div>
-            )}
+
+              <Link to="/shop">
+                View all products
+                <i className="fas fa-arrow-right" />
+              </Link>
+            </div>
+
+            <div className="detail-recent-grid">
+              {recentProducts.slice(0, 4).map((item) => (
+                <article className="detail-recent-card" key={item._id}>
+                  <Link
+                    to={`/detail/${item._id}`}
+                    className="detail-recent-image"
+                  >
+                    <img src={item.img1} alt={item.name} />
+                  </Link>
+
+                  <div className="detail-recent-info">
+                    <Link to={`/detail/${item._id}`}>{item.name}</Link>
+
+                    <strong>{item.price}</strong>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
+      )}
+    </main>
   );
 }
 
