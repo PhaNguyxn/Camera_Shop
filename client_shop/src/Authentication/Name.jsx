@@ -1,48 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+
 import { Link } from "react-router-dom";
-import UserAPI from "../API/UserAPI";
 
 function Name() {
-  const [name, setName] = useState("");
+  const name = sessionStorage.getItem("name_user") || "Account";
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const response = await UserAPI.getDetailData(
-        sessionStorage.getItem("id_user"),
-      );
-
-      setName(response);
-    };
-
-    fetchData();
-  }, []);
+  const firstName = name.trim().split(/\s+/).pop();
 
   return (
-    <li className="nav-item dropdown">
-      <button
-        type="button"
-        className="nav-link dropdown-toggle"
-        style={{
-          cursor: "pointer",
-          border: "none",
-          background: "transparent",
-        }}
-        id="pagesDropdown"
-        data-toggle="dropdown"
-        aria-haspopup="true"
-        aria-expanded="false"
-      >
-        <i className="fas fa-user-alt mr-1 text-gray"></i>
+    <div className="header-user">
+      <div className="header-user-avatar">{name.charAt(0).toUpperCase()}</div>
 
-        {name?.fullname}
-      </button>
+      <div className="header-user-info">
+        <span>Hello</span>
 
-      <div className="dropdown-menu mt-3" aria-labelledby="pagesDropdown">
-        <Link className="dropdown-item border-0 transition-link" to="/history">
-          History
-        </Link>
+        <Link to="/history">{firstName}</Link>
       </div>
-    </li>
+    </div>
   );
 }
 

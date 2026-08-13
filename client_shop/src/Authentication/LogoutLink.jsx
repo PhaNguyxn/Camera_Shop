@@ -1,14 +1,15 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
 
-function LogoutLink(props) {
-    return (
-        <li className="nav-item">
-            <Link className="nav-link" to={`/signin`}>
-                <i className="fas fa-user-alt mr-1 text-gray"></i>Login
-            </Link>
-        </li>
-    );
+import { Link } from "react-router-dom";
+
+function LogoutLink() {
+  return (
+    <Link to="/signin" className="header-account-action">
+      <i className="far fa-user" />
+
+      <span>Sign In</span>
+    </Link>
+  );
 }
 
 export default LogoutLink;

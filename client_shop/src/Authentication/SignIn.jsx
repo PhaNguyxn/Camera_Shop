@@ -1,185 +1,350 @@
 import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+
 import { Link, useHistory } from "react-router-dom";
+
+import { useDispatch, useSelector } from "react-redux";
+
 import queryString from "query-string";
+import alertify from "alertifyjs";
 
 import UserAPI from "../API/UserAPI";
 import CartAPI from "../API/CartAPI";
 
 import { addSession } from "../Redux/Action/ActionSession";
 
+import { deleteAllCart } from "../Redux/Action/ActionCart";
+
 import "./Auth.css";
 
 function SignIn() {
-  
-  const listCart = useSelector((state) => state.Cart.listCart);
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const [errorEmail, setErrorEmail] = useState(false);
-  const [emailRegex, setEmailRegex] = useState(false);
-  const [errorPassword, setErrorPassword] = useState(false);
-  const [errorLogin, setErrorLogin] = useState(false);
-
   const history = useHistory();
+
   const dispatch = useDispatch();
 
-  const onChangeEmail = (e) => {
-    setEmail(e.target.value);
+  const guestCart = useSelector((state) => state.Cart.listCart);
+
+  const [email, setEmail] = useState("");
+
+  const [password, setPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  const [errors, setErrors] = useState({});
+
+  const validateEmail = (value) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   };
 
-  const onChangePassword = (e) => {
-    setPassword(e.target.value);
+  const validateForm = () => {
+    const newErrors = {};
+
+    const emailValue = email.trim();
+
+    if (!emailValue) {
+      newErrors.email = "Vui lòng nhập email.";
+    } else if (!validateEmail(emailValue)) {
+      newErrors.email = "Định dạng email không hợp lệ.";
+    }
+
+    if (!password) {
+      newErrors.password = "Vui lòng nhập mật khẩu.";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
   };
 
   const syncCartToServer = async (idUser) => {
-    for (let i = 0; i < listCart.length; i++) {
+    if (!Array.isArray(guestCart) || guestCart.length === 0) {
+      return;
+    }
+
+    const requests = guestCart.map((item) => {
       const params = {
-        idUser: idUser,
-        idProduct: listCart[i].idProduct,
-        count: listCart[i].count,
+        idUser,
+
+        idProduct: item.idProduct,
+
+        count: Number(item.count) || 1,
       };
 
       const query = "?" + queryString.stringify(params);
 
-      await CartAPI.postAddToCart(query);
-    }
+      return CartAPI.postAddToCart(query);
+    });
+
+    await Promise.all(requests);
+
+    dispatch(deleteAllCart([]));
   };
 
-  const onSubmit = async () => {
-    setErrorEmail(false);
-    setErrorPassword(false);
-    setEmailRegex(false);
-    setErrorLogin(false);
 
-    if (!email) {
-      setErrorEmail(true);
-      return;
-    }
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-    if (!validateEmail(email)) {
-      setEmailRegex(true);
-      return;
-    }
-
-    if (!password) {
-      setErrorPassword(true);
+    if (!validateForm()) {
       return;
     }
 
     try {
+      setLoading(true);
+      setErrors({});
+
       const body = {
-        email,
+        email: email.trim(),
         password,
       };
 
-      const res = await UserAPI.postLogin(body);
+      const response = await UserAPI.postLogin(body);
 
-      if (res && res._id) {
-        const idUser = res._id;
+      if (!response || !response._id) {
+        setErrors({
+          general: "Email hoặc mật khẩu không đúng.",
+        });
 
-        sessionStorage.setItem("id_user", idUser);
+        alertify.set("notifier", "position", "bottom-left");
 
-        sessionStorage.setItem("name_user", res.fullname);
+        alertify.error("Email hoặc mật khẩu không đúng!");
 
-        const action = addSession(idUser);
+        setLoading(false);
 
-        dispatch(action);
-
-        if (Array.isArray(listCart) && listCart.length > 0) {
-          await syncCartToServer(idUser);
-        }
-
-
-        history.push("/");
+        return;
       }
 
-      else if (res === "false") {
-        setErrorLogin(true);
-      } else {
-        setErrorLogin(true);
-      }
+      const idUser = response._id;
+
+      sessionStorage.setItem("id_user", idUser);
+
+      sessionStorage.setItem("name_user", response.fullname || "User");
+
+
+      dispatch(addSession(idUser));
+
+      await syncCartToServer(idUser);
+
+
+      window.dispatchEvent(new Event("cartUpdated"));
+
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.success("Đăng nhập thành công!");
+
+      setLoading(false);
+
+      history.push("/");
     } catch (error) {
       console.error("Login error:", error);
 
-      setErrorLogin(true);
+      setErrors({
+        general: "Không thể đăng nhập. Vui lòng thử lại.",
+      });
+
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Đăng nhập thất bại, vui lòng thử lại!");
+
+      setLoading(false);
     }
   };
 
-  function validateEmail(email) {
-    const re =
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
-    return re.test(String(email).toLowerCase());
-  }
+  const handleEmailChange = (event) => {
+    setEmail(event.target.value);
+
+    if (errors.email || errors.general) {
+      setErrors((current) => ({
+        ...current,
+
+        email: "",
+
+        general: "",
+      }));
+    }
+  };
+
+  const handlePasswordChange = (event) => {
+    setPassword(event.target.value);
+
+    if (errors.password || errors.general) {
+      setErrors((current) => ({
+        ...current,
+
+        password: "",
+
+        general: "",
+      }));
+    }
+  };
 
   return (
-    <div className="limiter">
-      <div className="container-login100">
-        <div className="wrap-login100 p-l-55 p-r-55 p-t-65 p-b-50">
-          <span className="login100-form-title p-b-33">Sign In</span>
+    <main className="auth-page">
+      <div className="auth-container">
 
-          <div className="d-flex justify-content-center pb-5">
-            {emailRegex && (
-              <span className="text-danger">* Incorrect Email Format</span>
-            )}
+        <div className="auth-visual">
+          <div className="auth-visual-overlay" />
 
-            {errorEmail && (
-              <span className="text-danger">* Please Check Your Email</span>
-            )}
-
-            {errorPassword && (
-              <span className="text-danger">* Please Check Your Password</span>
-            )}
-
-            {errorLogin && (
-              <span className="text-danger">
-                * Please Check Your Email or Password
+          <div className="auth-visual-content">
+            <Link to="/" className="auth-brand">
+              <span className="auth-brand-icon">
+                <i className="fas fa-camera" />
               </span>
+
+              <span>
+                CAMERA
+                <strong>SHOP</strong>
+              </span>
+            </Link>
+
+            <div className="auth-visual-text">
+              <span className="auth-eyebrow">Welcome back</span>
+
+              <h1>Continue your photography journey.</h1>
+
+              <p>Sign in to manage your orders, wishlist and shopping cart.</p>
+            </div>
+
+            <div className="auth-benefits">
+              <span>
+                <i className="fas fa-check" />
+                Track your orders
+              </span>
+
+              <span>
+                <i className="fas fa-check" />
+                Save favorite cameras
+              </span>
+
+              <span>
+                <i className="fas fa-check" />
+                Faster checkout
+              </span>
+            </div>
+          </div>
+        </div>
+
+
+        <div className="auth-form-panel">
+          <div className="auth-form-wrapper">
+            <div className="auth-mobile-logo">
+              <Link to="/" className="auth-brand">
+                <span className="auth-brand-icon">
+                  <i className="fas fa-camera" />
+                </span>
+
+                <span>
+                  CAMERA
+                  <strong>SHOP</strong>
+                </span>
+              </Link>
+            </div>
+
+            <div className="auth-form-heading">
+              <span className="section-eyebrow">Account</span>
+
+              <h2>Sign in</h2>
+
+              <p>Enter your account details to continue.</p>
+            </div>
+
+            {errors.general && (
+              <div className="auth-general-error">
+                <i className="fas fa-exclamation-circle" />
+
+                <span>{errors.general}</span>
+              </div>
             )}
-          </div>
 
-          <div className="wrap-input100 validate-input">
-            <input
-              className="input100"
-              type="text"
-              placeholder="Email"
-              value={email}
-              onChange={onChangeEmail}
-            />
-          </div>
+            <form className="auth-form" onSubmit={handleSubmit}>
 
-          <div className="wrap-input100 rs1 validate-input">
-            <input
-              className="input100"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={onChangePassword}
-            />
-          </div>
+              <div className="auth-field">
+                <label htmlFor="loginEmail">Email Address</label>
 
-          <div className="container-login100-form-btn m-t-20">
-            <button
-              type="button"
-              className="login100-form-btn"
-              onClick={onSubmit}
-            >
-              Sign in
-            </button>
-          </div>
+                <div className={`auth-input ${errors.email ? "error" : ""}`}>
+                  <i className="far fa-envelope" />
 
-          <div className="text-center p-t-45 p-b-4">
-            <span className="txt1">Create an account?</span>
-            &nbsp;
-            <Link to="/signup" className="txt2 hov1">
-              Sign up
+                  <input
+                    id="loginEmail"
+                    type="email"
+                    value={email}
+                    onChange={handleEmailChange}
+                    placeholder="Enter your email"
+                    autoComplete="email"
+                  />
+                </div>
+
+                {errors.email && (
+                  <span className="auth-error">{errors.email}</span>
+                )}
+              </div>
+
+              <div className="auth-field">
+                <label htmlFor="loginPassword">Password</label>
+
+                <div className={`auth-input ${errors.password ? "error" : ""}`}>
+                  <i className="fas fa-lock" />
+
+                  <input
+                    id="loginPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={handlePasswordChange}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                  />
+
+                  <button
+                    type="button"
+                    className="auth-password-toggle"
+                    onClick={() => setShowPassword((value) => !value)}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    <i
+                      className={
+                        showPassword ? "far fa-eye-slash" : "far fa-eye"
+                      }
+                    />
+                  </button>
+                </div>
+
+                {errors.password && (
+                  <span className="auth-error">{errors.password}</span>
+                )}
+              </div>
+
+              <button type="submit" className="auth-submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <i className="fas fa-circle-notch fa-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign In
+                    <i className="fas fa-arrow-right" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="auth-switch">
+              <span>Don't have an account?</span>
+
+              <Link to="/signup">Create Account</Link>
+            </div>
+
+            <Link to="/shop" className="auth-back-shop">
+              <i className="fas fa-arrow-left" />
+              Continue as guest
             </Link>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

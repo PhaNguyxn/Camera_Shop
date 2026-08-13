@@ -1,125 +1,379 @@
-import React, { useState } from 'react';
-import { Link, Redirect } from 'react-router-dom';
-import UserAPI from '../API/UserAPI';
-import './Auth.css';
+import React, { useState } from "react";
 
-function SignUp(props) {
-    const [fullname, setFullName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [phone, setPhone] = useState('');
+import { Link, useHistory } from "react-router-dom";
 
-    const [errorFullname, setFullnameError] = useState(false);
-    const [errorEmail, setEmailError] = useState(false);
-    const [emailRegex, setEmailRegex] = useState(false);
-    const [errorPassword, setPasswordError] = useState(false);
-    const [errorPhone, setPhoneError] = useState(false);
+import alertify from "alertifyjs";
 
-    const [success, setSuccess] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
+import UserAPI from "../API/UserAPI";
 
-    const onChangeName = (e) => setFullName(e.target.value);
-    const onChangeEmail = (e) => setEmail(e.target.value);
-    const onChangePassword = (e) => setPassword(e.target.value);
-    const onChangePhone = (e) => setPhone(e.target.value);
+import "./Auth.css";
 
-    function validateEmail(email) {
-        const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(String(email).toLowerCase());
+function SignUp() {
+  const history = useHistory();
+
+  const [fullname, setFullname] = useState("");
+
+  const [email, setEmail] = useState("");
+
+  const [phone, setPhone] = useState("");
+
+  const [password, setPassword] = useState("");
+
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  const [errors, setErrors] = useState({});
+
+  const validateEmail = (value) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
+
+  const validatePhone = (value) => {
+    return /^[0-9+]{9,15}$/.test(value.replace(/\s/g, ""));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!fullname.trim()) {
+      newErrors.fullname = "Vui lòng nhập họ tên.";
     }
 
-    const handlerSignUp = async (e) => {
-        e.preventDefault();
-
-        // 1. Reset lại tất cả các thông báo lỗi trước khi kiểm tra
-        setFullnameError(false);
-        setEmailError(false);
-        setEmailRegex(false);
-        setPasswordError(false);
-        setPhoneError(false);
-
-        // 2. Validation (Early Return)
-        if (!fullname) return setFullnameError(true);
-        if (!email) return setEmailError(true);
-        if (!validateEmail(email)) return setEmailRegex(true);
-        if (!password) return setPasswordError(true);
-        if (!phone) return setPhoneError(true);
-
-        // 3. Nếu đã qua hết validation, tiến hành gọi API
-        setSubmitted(true);
-
-        try {
-            const params = {
-                fullname,
-                email,
-                password,
-                phone
-            }
-
-            await UserAPI.postSignUp(params)
-            setSuccess(true);
-        } catch (error) {
-            console.error("Lỗi đăng ký:", error);
-            // Quan trọng: Nếu lỗi thì phải cho phép người dùng sửa và nhấn lại
-            setSubmitted(false); 
-            alert("Đăng ký thất bại, vui lòng thử lại!");
-        }
-    };
-
-    // Nếu thành công thì chuyển hướng sang trang Sign In
-    if (success) {
-        return <Redirect to='/signin' />;
+    if (!email.trim()) {
+      newErrors.email = "Vui lòng nhập email.";
+    } else if (!validateEmail(email.trim())) {
+      newErrors.email = "Định dạng email không hợp lệ.";
     }
 
-    return (
-        <div className="limiter">
-            <div className="container-login100">
-                <div className="wrap-login100 p-l-55 p-r-55 p-t-65 p-b-50">
-                    <span className="login100-form-title p-b-33">Sign Up</span>
-                    
-                    <div className="d-flex justify-content-center pb-5">
-                        {errorFullname && <span className="text-danger">* Vui lòng kiểm tra Họ tên!</span>}
-                        {errorEmail && <span className="text-danger">* Vui lòng kiểm tra Email!</span>}
-                        {emailRegex && <span className="text-danger">* Định dạng Email không đúng</span>}
-                        {errorPassword && <span className="text-danger">* Vui lòng kiểm tra Mật khẩu!</span>}
-                        {errorPhone && <span className="text-danger">* Vui lòng kiểm tra Số điện thoại!</span>}
-                    </div>
+    if (!phone.trim()) {
+      newErrors.phone = "Vui lòng nhập số điện thoại.";
+    } else if (!validatePhone(phone.trim())) {
+      newErrors.phone = "Số điện thoại không hợp lệ.";
+    }
 
-                    <div className="wrap-input100 validate-input">
-                        <input className="input100" value={fullname} onChange={onChangeName} type="text" placeholder="Full Name" />
-                    </div>
+    if (!password) {
+      newErrors.password = "Vui lòng nhập mật khẩu.";
+    } else if (password.length < 6) {
+      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự.";
+    }
 
-                    <div className="wrap-input100 rs1 validate-input">
-                        <input className="input100" value={email} onChange={onChangeEmail} type="text" placeholder="Email" />
-                    </div>
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu.";
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Mật khẩu xác nhận không khớp.";
+    }
 
-                    <div className="wrap-input100 rs1 validate-input">
-                        <input className="input100" value={password} onChange={onChangePassword} type="password" placeholder="Password" />
-                    </div>
+    setErrors(newErrors);
 
-                    <div className="wrap-input100 rs1 validate-input">
-                        <input className="input100" value={phone} onChange={onChangePhone} type="text" placeholder="Phone" />
-                    </div>
+    return Object.keys(newErrors).length === 0;
+  };
 
-                    <div className="container-login100-form-btn m-t-20">
-                        <button 
-                            className="login100-form-btn" 
-                            onClick={handlerSignUp}
-                            disabled={submitted} // Vô hiệu hóa nút khi đang gửi dữ liệu
-                        >
-                            {submitted ? "Loading..." : "Sign Up"}
-                        </button>
-                    </div>
 
-                    <div className="text-center p-t-45 p-b-4">
-                        <span className="txt1">Login?</span>
-                        &nbsp;
-                        <Link to="/signin" className="txt2 hov1">Click</Link>
-                    </div>
-                </div>
+  const updateField = (setter, field) => (event) => {
+    setter(event.target.value);
+
+    if (errors[field] || errors.general) {
+      setErrors((current) => ({
+        ...current,
+
+        [field]: "",
+
+        general: "",
+      }));
+    }
+  };
+
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setErrors({});
+
+      const params = {
+        fullname: fullname.trim(),
+
+        email: email.trim(),
+
+        password,
+
+        phone: phone.trim(),
+      };
+
+      await UserAPI.postSignUp(params);
+
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.success("Đăng ký tài khoản thành công!");
+
+      setLoading(false);
+
+      history.push("/signin");
+    } catch (error) {
+      console.error("Sign up error:", error);
+
+      setErrors({
+        general: "Không thể tạo tài khoản. Email có thể đã được sử dụng.",
+      });
+
+      alertify.set("notifier", "position", "bottom-left");
+
+      alertify.error("Đăng ký thất bại, vui lòng thử lại!");
+
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="auth-page">
+      <div className="auth-container">
+
+        <div className="auth-visual">
+          <div className="auth-visual-overlay" />
+
+          <div className="auth-visual-content">
+            <Link to="/" className="auth-brand">
+              <span className="auth-brand-icon">
+                <i className="fas fa-camera" />
+              </span>
+
+              <span>
+                CAMERA
+                <strong>SHOP</strong>
+              </span>
+            </Link>
+
+            <div className="auth-visual-text">
+              <span className="auth-eyebrow">Join Camera Shop</span>
+
+              <h1>Create your photography account.</h1>
+
+              <p>
+                Save your favorite cameras, manage orders and enjoy a faster
+                shopping experience.
+              </p>
             </div>
+
+            <div className="auth-benefits">
+              <span>
+                <i className="fas fa-check" />
+                Save your wishlist
+              </span>
+
+              <span>
+                <i className="fas fa-check" />
+                Track every order
+              </span>
+
+              <span>
+                <i className="fas fa-check" />
+                Faster checkout
+              </span>
+            </div>
+          </div>
         </div>
-    );
+
+
+        <div className="auth-form-panel">
+          <div className="auth-form-wrapper">
+            <div className="auth-mobile-logo">
+              <Link to="/" className="auth-brand">
+                <span className="auth-brand-icon">
+                  <i className="fas fa-camera" />
+                </span>
+
+                <span>
+                  CAMERA
+                  <strong>SHOP</strong>
+                </span>
+              </Link>
+            </div>
+
+            <div className="auth-form-heading">
+              <span className="section-eyebrow">New account</span>
+
+              <h2>Create Account</h2>
+
+              <p>Enter your information to create a Camera Shop account.</p>
+            </div>
+
+            {errors.general && (
+              <div className="auth-general-error">
+                <i className="fas fa-exclamation-circle" />
+
+                <span>{errors.general}</span>
+              </div>
+            )}
+
+            <form className="auth-form" onSubmit={handleSubmit}>
+
+              <div className="auth-field">
+                <label htmlFor="signupName">Full Name</label>
+
+                <div className={`auth-input ${errors.fullname ? "error" : ""}`}>
+                  <i className="far fa-user" />
+
+                  <input
+                    id="signupName"
+                    type="text"
+                    value={fullname}
+                    onChange={updateField(setFullname, "fullname")}
+                    placeholder="Enter your full name"
+                    autoComplete="name"
+                  />
+                </div>
+
+                {errors.fullname && (
+                  <span className="auth-error">{errors.fullname}</span>
+                )}
+              </div>
+
+
+              <div className="auth-field">
+                <label htmlFor="signupEmail">Email Address</label>
+
+                <div className={`auth-input ${errors.email ? "error" : ""}`}>
+                  <i className="far fa-envelope" />
+
+                  <input
+                    id="signupEmail"
+                    type="email"
+                    value={email}
+                    onChange={updateField(setEmail, "email")}
+                    placeholder="Enter your email"
+                    autoComplete="email"
+                  />
+                </div>
+
+                {errors.email && (
+                  <span className="auth-error">{errors.email}</span>
+                )}
+              </div>
+
+
+              <div className="auth-field">
+                <label htmlFor="signupPhone">Phone Number</label>
+
+                <div className={`auth-input ${errors.phone ? "error" : ""}`}>
+                  <i className="fas fa-phone-alt" />
+
+                  <input
+                    id="signupPhone"
+                    type="tel"
+                    value={phone}
+                    onChange={updateField(setPhone, "phone")}
+                    placeholder="Enter your phone number"
+                    autoComplete="tel"
+                  />
+                </div>
+
+                {errors.phone && (
+                  <span className="auth-error">{errors.phone}</span>
+                )}
+              </div>
+
+
+              <div className="auth-field">
+                <label htmlFor="signupPassword">Password</label>
+
+                <div className={`auth-input ${errors.password ? "error" : ""}`}>
+                  <i className="fas fa-lock" />
+
+                  <input
+                    id="signupPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={updateField(setPassword, "password")}
+                    placeholder="Create a password"
+                    autoComplete="new-password"
+                  />
+
+                  <button
+                    type="button"
+                    className="auth-password-toggle"
+                    onClick={() => setShowPassword((value) => !value)}
+                    aria-label="Show password"
+                  >
+                    <i
+                      className={
+                        showPassword ? "far fa-eye-slash" : "far fa-eye"
+                      }
+                    />
+                  </button>
+                </div>
+
+                {errors.password && (
+                  <span className="auth-error">{errors.password}</span>
+                )}
+              </div>
+
+
+              <div className="auth-field">
+                <label htmlFor="confirmPassword">Confirm Password</label>
+
+                <div
+                  className={`auth-input ${
+                    errors.confirmPassword ? "error" : ""
+                  }`}
+                >
+                  <i className="fas fa-lock" />
+
+                  <input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={updateField(
+                      setConfirmPassword,
+                      "confirmPassword",
+                    )}
+                    placeholder="Confirm your password"
+                    autoComplete="new-password"
+                  />
+                </div>
+
+                {errors.confirmPassword && (
+                  <span className="auth-error">{errors.confirmPassword}</span>
+                )}
+              </div>
+
+              <button type="submit" className="auth-submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <i className="fas fa-circle-notch fa-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    Create Account
+                    <i className="fas fa-arrow-right" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="auth-switch">
+              <span>Already have an account?</span>
+
+              <Link to="/signin">Sign In</Link>
+            </div>
+
+            <Link to="/shop" className="auth-back-shop">
+              <i className="fas fa-arrow-left" />
+              Continue as guest
+            </Link>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
 }
 
 export default SignUp;

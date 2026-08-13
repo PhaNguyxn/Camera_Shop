@@ -1,24 +1,31 @@
 import React from "react";
+
 import { Link } from "react-router-dom";
+
 import { useDispatch } from "react-redux";
+
 import { deleteSession } from "../Redux/Action/ActionSession";
 
-function LoginLink(props) {
+function LoginLink() {
   const dispatch = useDispatch();
 
-  const onRedirect = () => {
-    sessionStorage.clear();
+  const handleLogout = () => {
 
-    const action = deleteSession("");
-    dispatch(action);
+    sessionStorage.removeItem("id_user");
+
+    sessionStorage.removeItem("name_user");
+
+    dispatch(deleteSession(""));
+
+    window.dispatchEvent(new Event("cartUpdated"));
   };
 
   return (
-    <li className="nav-item" onClick={onRedirect}>
-      <Link className="nav-link" to="/signin">
-        ( Logout )
-      </Link>
-    </li>
+    <Link to="/signin" className="header-account-action" onClick={handleLogout}>
+      <i className="fas fa-sign-out-alt" />
+
+      <span>Logout</span>
+    </Link>
   );
 }
 
