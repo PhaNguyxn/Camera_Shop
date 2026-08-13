@@ -6,6 +6,10 @@ import ProductAPI from "../API/ProductAPI";
 
 import Image from "../Share/img/Image";
 
+import alertify from "alertifyjs";
+
+import { getWishlist, toggleWishlist } from "../utils/wishlist";
+
 import "./Home.css";
 
 function Home() {
@@ -18,6 +22,8 @@ function Home() {
   const [subscribeEmail, setSubscribeEmail] = useState("");
 
   const [subscribeMessage, setSubscribeMessage] = useState("");
+
+  const [favoriteIds, setFavoriteIds] = useState([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -106,10 +112,42 @@ function Home() {
     },
   ];
 
+  const refreshWishlist = () => {
+    const wishlist = getWishlist();
+
+    setFavoriteIds(wishlist.map((item) => String(item._id)));
+  };
+
+  useEffect(() => {
+    refreshWishlist();
+
+    const handleUpdate = () => {
+      refreshWishlist();
+    };
+
+    window.addEventListener("wishlistUpdated", handleUpdate);
+
+    return () => {
+      window.removeEventListener("wishlistUpdated", handleUpdate);
+    };
+  }, []);
+
+  const handleWishlist = (product) => {
+    const result = toggleWishlist(product);
+
+    refreshWishlist();
+
+    alertify.set("notifier", "position", "bottom-left");
+
+    if (result.added) {
+      alertify.success("Đã thêm sản phẩm vào danh sách yêu thích!");
+    } else {
+      alertify.success("Đã xóa sản phẩm khỏi danh sách yêu thích!");
+    }
+  };
+
   return (
     <main className="home-page">
-
-
       {products.map((product) => (
         <div
           className="modal fade"
@@ -126,7 +164,6 @@ function Home() {
             <div className="modal-content home-product-modal">
               <div className="modal-body p-0">
                 <div className="row no-gutters align-items-stretch">
-
                   <div className="col-lg-6">
                     <div className="home-modal-image">
                       <img
@@ -176,10 +213,25 @@ function Home() {
 
                         <button
                           type="button"
-                          className="home-modal-wishlist"
-                          aria-label="Add to wishlist"
+                          className={`home-modal-wishlist ${
+                            favoriteIds.includes(String(product._id))
+                              ? "active"
+                              : ""
+                          }`}
+                          onClick={() => handleWishlist(product)}
+                          aria-label={
+                            favoriteIds.includes(String(product._id))
+                              ? "Remove from wishlist"
+                              : "Add to wishlist"
+                          }
                         >
-                          <i className="far fa-heart" />
+                          <i
+                            className={
+                              favoriteIds.includes(String(product._id))
+                                ? "fas fa-heart"
+                                : "far fa-heart"
+                            }
+                          />
                         </button>
                       </div>
                     </div>
@@ -298,7 +350,6 @@ function Home() {
         </div>
       </section>
 
-
       <section className="shop-section home-products-section">
         <div className="shop-container">
           <div className="home-section-heading">
@@ -319,7 +370,6 @@ function Home() {
             </Link>
           </div>
 
-
           {loading && (
             <div className="home-products-loading">
               <div className="home-products-spinner" />
@@ -338,7 +388,6 @@ function Home() {
             </div>
           )}
 
-
           {!loading && !error && products.length > 0 && (
             <div className="row">
               {products.map((product) => (
@@ -347,7 +396,6 @@ function Home() {
                   key={product._id}
                 >
                   <article className="camera-product-card">
-
                     <div className="camera-product-image">
                       <Link to={`/detail/${product._id}`}>
                         <img
@@ -361,11 +409,25 @@ function Home() {
                       <div className="camera-product-actions">
                         <button
                           type="button"
-                          aria-label={`Add ${
-                            product.name || "product"
-                          } to wishlist`}
+                          className={`home-product-favorite ${
+                            favoriteIds.includes(String(product._id))
+                              ? "active"
+                              : ""
+                          }`}
+                          onClick={() => handleWishlist(product)}
+                          aria-label={
+                            favoriteIds.includes(String(product._id))
+                              ? "Remove from wishlist"
+                              : "Add to wishlist"
+                          }
                         >
-                          <i className="far fa-heart" />
+                          <i
+                            className={
+                              favoriteIds.includes(String(product._id))
+                                ? "fas fa-heart"
+                                : "far fa-heart"
+                            }
+                          />
                         </button>
 
                         <button
@@ -378,7 +440,6 @@ function Home() {
                         </button>
                       </div>
                     </div>
-
 
                     <div className="camera-product-info">
                       <div className="camera-product-rating">
@@ -415,7 +476,6 @@ function Home() {
               ))}
             </div>
           )}
-
 
           {!loading && !error && products.length === 0 && (
             <div className="home-products-empty">
@@ -462,7 +522,6 @@ function Home() {
       <section className="home-benefits">
         <div className="shop-container">
           <div className="home-benefit-grid">
-
             <div className="home-benefit">
               <div className="home-benefit-icon">
                 <i className="fas fa-shipping-fast" />
@@ -487,7 +546,6 @@ function Home() {
               </div>
             </div>
 
-
             <div className="home-benefit">
               <div className="home-benefit-icon">
                 <i className="fas fa-headset" />
@@ -502,7 +560,6 @@ function Home() {
           </div>
         </div>
       </section>
-
 
       <section className="shop-section home-newsletter-section">
         <div className="shop-container">

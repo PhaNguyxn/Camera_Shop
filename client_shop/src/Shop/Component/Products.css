@@ -601,3 +601,38 @@ a:hover {
     display: -webkit-box;
   }
 }
+
+.shop-product-favorite.active {
+  background: #111111 !important;
+
+  color: #d8b77e !important;
+}
+
+.shop-product-favorite.active:hover {
+  background: #292929 !important;
+
+  color: #d8b77e !important;
+}
+
+.shop-product-favorite.active i {
+  animation:
+    favoritePop
+    0.25s ease;
+}
+
+@keyframes favoritePop {
+  0% {
+    transform:
+      scale(0.7);
+  }
+
+  70% {
+    transform:
+      scale(1.18);
+  }
+
+  100% {
+    transform:
+      scale(1);
+  }
+}
