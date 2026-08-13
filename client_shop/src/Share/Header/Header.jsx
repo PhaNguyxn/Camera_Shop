@@ -35,11 +35,7 @@ function Header() {
 
   const guestCart = useSelector((state) => state.Cart.listCart);
 
-  /*
-   * =========================================
-   * RESTORE USER SESSION
-   * =========================================
-   */
+  
 
   useEffect(() => {
     const savedUser = sessionStorage.getItem("id_user");
@@ -68,12 +64,8 @@ function Header() {
   };
 
   const refreshCartCount = useCallback(async () => {
-    const sessionUserId = sessionStorage.getItem("id_user") || idUser;
+    const sessionUserId = sessionStorage.getItem("id_user");
 
-    /*
-     * Logged in user:
-     * load cart from server.
-     */
     if (sessionUserId) {
       try {
         const params = {
@@ -84,20 +76,22 @@ function Header() {
 
         const response = await CartAPI.getCarts(query);
 
-        setCartCount(calculateCartCount(response));
+        const count = calculateCartCount(response);
 
-        return;
+        setCartCount(count);
       } catch (error) {
         console.error("Load cart count error:", error);
 
         setCartCount(0);
-
-        return;
       }
+
+      return;
     }
 
-    setCartCount(calculateCartCount(guestCart));
-  }, [idUser, guestCart]);
+    const count = calculateCartCount(guestCart);
+
+    setCartCount(count);
+  }, [guestCart]);
 
   useEffect(() => {
     refreshCartCount();
@@ -156,6 +150,7 @@ function Header() {
   };
 
   const isLoggedIn = Boolean(idUser || sessionStorage.getItem("id_user"));
+
 
   return (
     <header className="shop-header">

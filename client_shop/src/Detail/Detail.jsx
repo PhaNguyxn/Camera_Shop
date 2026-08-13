@@ -162,7 +162,7 @@ function Detail() {
     if (!detail?._id) {
       alertify.set("notifier", "position", "bottom-left");
 
-      alertify.error("Product not found.");
+      alertify.error("Không tìm thấy sản phẩm!");
 
       return;
     }
@@ -187,28 +187,34 @@ function Detail() {
       if (sessionUserId) {
         const params = {
           idUser: sessionUserId,
+
           idProduct: detail._id,
+
           count,
         };
 
         const query = "?" + queryString.stringify(params);
 
         await CartAPI.postAddToCart(query);
-
-        window.dispatchEvent(new Event("cartUpdated"));
       } else {
         dispatch(addCart(data));
       }
+
+      /*
+       * Báo cho Header biết
+       * cart vừa thay đổi.
+       */
+      window.dispatchEvent(new Event("cartUpdated"));
 
       alertify.set("notifier", "position", "bottom-left");
 
       alertify.success("Bạn đã thêm sản phẩm vào giỏ hàng thành công!");
     } catch (error) {
-      console.error("Thêm sản phẩm vào giỏ hàng thất bại!");
+      console.error("Add to cart error:", error);
 
       alertify.set("notifier", "position", "bottom-left");
 
-      alertify.error("Không tìm thấy sản phẩm!");
+      alertify.error("Thêm sản phẩm vào giỏ hàng thất bại!");
     }
   };
 
