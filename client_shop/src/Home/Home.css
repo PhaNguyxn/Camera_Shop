@@ -1,16 +1,18 @@
 
 .home-page {
   width: 100%;
+  max-width: 100vw;
 
   overflow-x: hidden;
 
-  background:
-    var(--color-bg);
+  background: var(--color-bg);
 }
 
 
 .camera-hero {
   position: relative;
+
+  width: 100%;
 
   min-height: 650px;
 
@@ -22,13 +24,11 @@
 
   background-size: cover;
 
-  background-position: center;
+  background-position: center center;
 
   background-repeat: no-repeat;
 
-  border-radius:
-    0 0
-    28px 28px;
+  border-radius: 0 0 28px 28px;
 }
 
 .camera-hero-overlay {
@@ -54,13 +54,21 @@
   z-index: 2;
 
   width: 100%;
+
+  max-width: 1400px;
+
+  margin: 0 auto;
+
+  padding-left: 40px;
+  padding-right: 40px;
 }
 
 .camera-hero-content {
   max-width: 660px;
 
-  padding:
-    95px 0;
+  padding: 95px 0;
+
+  margin-left: 0;
 }
 
 .camera-hero-eyebrow {
@@ -1986,5 +1994,35 @@ input::placeholder {
 
   100% {
     transform: scale(1);
+  }
+}
+
+@media (max-width: 1200px) {
+  .camera-hero-inner {
+    padding-left: 30px;
+    padding-right: 30px;
+  }
+
+  .camera-hero {
+    background-position: 60% center;
+  }
+}
+
+@media (max-width: 768px) {
+  .camera-hero {
+    min-height: 560px;
+
+    background-position: 65% center;
+  }
+
+  .camera-hero-inner {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .camera-hero-content {
+    max-width: 520px;
+
+    padding: 70px 0;
   }
 }

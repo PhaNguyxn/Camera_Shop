@@ -17,11 +17,13 @@ import Checkout from './Checkout/Checkout';
 import History from './History/History';
 import Shop from './Shop/Shop';
 import Wishlist from "./Wishlist/Wishlist";
+import ScrollToTop from "./utils/ScrollToTop";
 
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
+        <ScrollToTop />
         <Header />
 
         <Switch>
