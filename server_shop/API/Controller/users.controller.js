@@ -46,6 +46,7 @@ module.exports.signup = async (req, res) => {
       email,
       password: hashedPassword,
       phone,
+      role: "customer"
     });
 
     const result = user.toObject();
@@ -64,29 +65,42 @@ module.exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await Users.findOne({
-      email,
-    });
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email và mật khẩu không được để trống",
+      });
+    }
+
+    const user = await Users.findOne({ email });
 
     if (!user) {
-      return res.json("false");
+      return res.status(401).json({
+        message: "Email hoặc mật khẩu không đúng",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.json("false");
+      return res.status(401).json({
+        message: "Email hoặc mật khẩu không đúng",
+      });
     }
 
     const result = user.toObject();
 
     delete result.password;
 
-    return res.json(result);
+    return res.status(200).json({
+      message: "Đăng nhập thành công",
+      user: result,
+    });
   } catch (error) {
-    console.error(error);
+    console.error("Login error:", error);
 
-    return res.status(500).json("Server Error!");
+    return res.status(500).json({
+      message: "Server Error!",
+    });
   }
 };
 
