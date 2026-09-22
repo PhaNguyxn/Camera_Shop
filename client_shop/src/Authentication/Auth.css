@@ -670,3 +670,68 @@
     margin-bottom: 35px;
   }
 }
+
+.auth-page,
+.auth-page * {
+  box-sizing: border-box;
+}
+
+.auth-page a {
+  text-decoration: none;
+}
+
+.auth-form-wrapper {
+  animation: authFadeIn 0.45s ease;
+}
+
+@keyframes authFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-input input:-webkit-autofill,
+.auth-input input:-webkit-autofill:hover,
+.auth-input input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #111111;
+
+  -webkit-box-shadow:
+    0 0 0 1000px #ffffff inset;
+
+  transition:
+    background-color 5000s ease-in-out 0s;
+}
+
+.auth-submit i {
+  font-size: 10px;
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.auth-password-toggle {
+  transition: color 0.2s ease;
+}
+
+.auth-general-error {
+  animation: authError 0.25s ease;
+}
+
+@keyframes authError {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

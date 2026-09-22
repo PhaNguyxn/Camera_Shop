@@ -1,3 +1,6 @@
+const dns = require("dns");
+
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -53,7 +56,6 @@ app.use(upload());
 
 app.use("/", express.static("public"));
 
-
 mongoose
   .connect(process.env.MONGODB_URL, {
     useNewUrlParser: true,
@@ -91,7 +93,6 @@ app.use("/carts", cartAPI);
 app.use("/histories", historiesAPI);
 
 app.use("/comment", commentAPI);
-
 
 app.get("/", (req, res) => {
   res.json({
