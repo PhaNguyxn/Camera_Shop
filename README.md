@@ -102,13 +102,3 @@ Run the applications in the following order:
 2. client_shop  → http://localhost:3000
 3. admin_shop   → http://localhost:3001
 ```
-
-All users sign in through the Client application:
-
-```text
-http://localhost:3000/signin
-```
-
-Customers are redirected to the Camera Shop, while administrators are redirected to the Admin Dashboard according to their account role.
-
-> **Note:** Do not commit the `.env` file or MongoDB credentials to the repository.
