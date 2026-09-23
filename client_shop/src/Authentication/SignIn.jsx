@@ -112,13 +112,6 @@ function SignIn() {
           <div className="auth-visual-overlay"></div>
 
           <div className="auth-visual-content">
-            <Link to="/" className="auth-brand">
-              <span className="auth-brand-icon">
-                <i className="fa fa-camera"></i>
-              </span>
-              CAMERA
-              <strong>SHOP</strong>
-            </Link>
 
             <div className="auth-visual-text">
               <span className="auth-eyebrow">CAMERA SHOP</span>
@@ -156,16 +149,6 @@ function SignIn() {
 
         <div className="auth-form-panel">
           <div className="auth-form-wrapper">
-            <div className="auth-mobile-logo">
-              <Link to="/" className="auth-brand">
-                <span className="auth-brand-icon">
-                  <i className="fa fa-camera"></i>
-                </span>
-                CAMERA
-                <strong>SHOP</strong>
-              </Link>
-            </div>
-
             <div className="auth-form-heading">
               <h2>Sign In</h2>
 

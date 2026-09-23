@@ -133,23 +133,12 @@ function SignUp() {
   };
 
   return (
-    <main className="auth-page">
-      <div className="auth-container">
-
+    <main className="auth-page auth-signup-page">
+      <div className="auth-container auth-signup-container">
         <div className="auth-visual">
           <div className="auth-visual-overlay" />
 
           <div className="auth-visual-content">
-            <Link to="/" className="auth-brand">
-              <span className="auth-brand-icon">
-                <i className="fas fa-camera" />
-              </span>
-
-              <span>
-                CAMERA
-                <strong>SHOP</strong>
-              </span>
-            </Link>
 
             <div className="auth-visual-text">
               <span className="auth-eyebrow">Join Camera Shop</span>
@@ -180,7 +169,6 @@ function SignUp() {
             </div>
           </div>
         </div>
-
 
         <div className="auth-form-panel">
           <div className="auth-form-wrapper">
@@ -214,7 +202,6 @@ function SignUp() {
             )}
 
             <form className="auth-form" onSubmit={handleSubmit}>
-
               <div className="auth-field">
                 <label htmlFor="signupName">Full Name</label>
 
@@ -235,7 +222,6 @@ function SignUp() {
                   <span className="auth-error">{errors.fullname}</span>
                 )}
               </div>
-
 
               <div className="auth-field">
                 <label htmlFor="signupEmail">Email Address</label>
@@ -258,7 +244,6 @@ function SignUp() {
                 )}
               </div>
 
-
               <div className="auth-field">
                 <label htmlFor="signupPhone">Phone Number</label>
 
@@ -279,7 +264,6 @@ function SignUp() {
                   <span className="auth-error">{errors.phone}</span>
                 )}
               </div>
-
 
               <div className="auth-field">
                 <label htmlFor="signupPassword">Password</label>
@@ -314,7 +298,6 @@ function SignUp() {
                   <span className="auth-error">{errors.password}</span>
                 )}
               </div>
-
 
               <div className="auth-field">
                 <label htmlFor="confirmPassword">Confirm Password</label>
