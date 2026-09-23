@@ -1,32 +1,43 @@
-var express = require('express')
+const express = require("express");
 
-var router = express.Router()
+const router = express.Router();
 
-const Products = require('../Controller/products.controller')
+const Products = require("../Controller/products.controller");
 
-router.get('/', Products.index)
+const { verifyToken, isAdmin } = require("../../Middleware/auth.middleware");
 
-router.get('/category', Products.category)
+router.get("/", Products.index);
 
-router.get('/category/list', Products.categories);
+router.get("/category", Products.category);
 
-router.post('/category/create', Products.createCategory);
+router.get("/category/list", Products.categories);
 
-router.put('/category/update/:id', Products.updateCategory);
+router.get("/pagination", Products.pagination);
 
-router.delete('/category/delete/:id', Products.deleteCategory);
+router.get("/category/detail/:id", Products.detailCategory);
 
-router.get('/category/detail/:id', Products.detailCategory);
+router.post("/category/create", verifyToken, isAdmin, Products.createCategory);
 
-router.post('/create', Products.createProduct);
+router.put(
+  "/category/update/:id",
+  verifyToken,
+  isAdmin,
+  Products.updateCategory,
+);
 
-router.put('/update/:id', Products.updateProduct);
+router.delete(
+  "/category/delete/:id",
+  verifyToken,
+  isAdmin,
+  Products.deleteCategory,
+);
 
-router.get('/pagination', Products.pagination)
+router.post("/create", verifyToken, isAdmin, Products.createProduct);
 
-router.delete('/:id', Products.deleteProduct);
+router.put("/update/:id", verifyToken, isAdmin, Products.updateProduct);
 
-router.get('/:id', Products.detail);
+router.delete("/:id", verifyToken, isAdmin, Products.deleteProduct);
 
+router.get("/:id", Products.detail);
 
-module.exports = router
+module.exports = router;

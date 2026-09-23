@@ -21,6 +21,7 @@ axiosClient.interceptors.request.use(
 
     return config;
   },
+
   (error) => {
     return Promise.reject(error);
   },
@@ -36,7 +37,14 @@ axiosClient.interceptors.response.use(
   },
 
   (error) => {
-    throw error;
+    if (error.response?.status === 401) {
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("id_user");
+      sessionStorage.removeItem("name_user");
+      sessionStorage.removeItem("role");
+    }
+
+    return Promise.reject(error);
   },
 );
 

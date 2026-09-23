@@ -21,6 +21,7 @@ axiosClient.interceptors.request.use(
 
     return config;
   },
+
   (error) => {
     return Promise.reject(error);
   },
@@ -42,7 +43,9 @@ axiosClient.interceptors.response.use(
       sessionStorage.removeItem("name_user");
       sessionStorage.removeItem("role");
 
-      window.location.href = "/login";
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     }
 
     return Promise.reject(error);

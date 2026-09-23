@@ -1,17 +1,17 @@
+const express = require("express");
 
-var express = require('express')
+const router = express.Router();
 
-var router = express.Router()
+const Carts = require("../Controller/carts.controller");
 
-const Carts = require('../Controller/carts.controller')
+const { verifyToken } = require("../../Middleware/auth.middleware");
 
-//Get Find Carts For User
-router.get('/', Carts.index)
+router.get("/", verifyToken, Carts.index);
 
-router.post('/add', Carts.addToCart)
+router.post("/add", verifyToken, Carts.addToCart);
 
-router.delete('/delete', Carts.deleteToCart)
+router.delete("/delete", verifyToken, Carts.deleteToCart);
 
-router.put('/update', Carts.updateToCart)
+router.put("/update", verifyToken, Carts.updateToCart);
 
-module.exports = router
+module.exports = router;

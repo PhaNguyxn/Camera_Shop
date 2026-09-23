@@ -15,13 +15,7 @@ const parsePrice = (value) => {
 
 module.exports.index = async (req, res) => {
   try {
-    const idUser = req.query.idUser;
-
-    if (!idUser) {
-      return res.status(400).json({
-        message: "Thiếu idUser",
-      });
-    }
+    const idUser = req.user.id;
 
     const histories = await Histories.find({
       idUser,
@@ -43,8 +37,12 @@ module.exports.index = async (req, res) => {
 module.exports.detail = async (req, res) => {
   try {
     const id = req.params.id;
+    const idUser = req.user.id;
 
-    const history = await Histories.findById(id);
+    const history = await Histories.findOne({
+      _id: id,
+      idUser,
+    });
 
     if (!history) {
       return res.status(404).json({
@@ -82,17 +80,11 @@ module.exports.history = async (req, res) => {
 
 module.exports.postHistory = async (req, res) => {
   try {
-    const {
-      idUser,
-      fullname,
-      email,
-      phone,
-      address,
-      paymentMethod = "COD",
-    } = req.body;
+    const idUser = req.user.id;
+
+    const { fullname, email, phone, address, paymentMethod = "COD" } = req.body;
 
     if (
-      !idUser ||
       !fullname?.trim() ||
       !email?.trim() ||
       !phone?.trim() ||

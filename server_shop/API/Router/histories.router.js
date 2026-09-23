@@ -1,19 +1,21 @@
-var express = require('express')
+const express = require("express");
 
-var router = express.Router()
+const router = express.Router();
 
-const Histories = require('../Controller/histories.controller')
+const Histories = require("../Controller/histories.controller");
 
-router.get('/', Histories.index)
+const { verifyToken, isAdmin } = require("../../Middleware/auth.middleware");
 
-router.get('/all', Histories.history)
+router.get("/all", verifyToken, isAdmin, Histories.history);
 
-router.get('/:id', Histories.detail)
+router.put("/update-status/:id", verifyToken, isAdmin, Histories.updateStatus);
 
-router.post('/', Histories.postHistory)
+router.put("/update-order/:id", verifyToken, isAdmin, Histories.updateOrder);
 
-router.put('/update-status/:id', Histories.updateStatus)
+router.get("/", verifyToken, Histories.index);
 
-router.put("/update-order/:id", Histories.updateOrder)
+router.post("/", verifyToken, Histories.postHistory);
 
-module.exports = router
+router.get("/:id", verifyToken, Histories.detail);
+
+module.exports = router;

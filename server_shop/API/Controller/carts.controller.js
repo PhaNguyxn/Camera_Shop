@@ -1,106 +1,166 @@
+const Carts = require("../../Model/carts.model");
+const Products = require("../../Model/products.model");
 
-const Carts = require('../../Model/carts.model')
-const Products = require('../../Model/products.model')
 
-//Hàm tìm những sản phẩm mà user đã thêm
 module.exports.index = async (req, res) => {
+  try {
+    const idUser = req.user.id;
 
-    //Lấy idUser từ query
-    const idUser = req.query.idUser
+    const carts = await Carts.find({
+      idUser,
+    });
 
-    //Tìm những sản phẩm mà user đã thêm
-    const carts = await Carts.find({ idUser: idUser})
+    return res.json(carts);
+  } catch (error) {
+    console.error("Get cart error:", error);
 
-    res.json(carts)
+    return res.status(500).json({
+      message: "Unable to load cart.",
+    });
+  }
+};
 
-}
 
-//Hàm thêm sản phẩm
 module.exports.addToCart = async (req, res) => {
+  try {
+    const idUser = req.user.id;
 
-    //Lấy idUser từ query
-    const idUser = req.query.idUser
-    
-    //Lấy idProduct từ query
-    const idProduct = req.query.idProduct
+    const idProduct = req.body.idProduct || req.query.idProduct;
 
-    //Layas count từ query
-    const count = req.query.count
+    const count = req.body.count || req.query.count;
 
-    //Tìm sản phẩm mà user cần mua
-    const product = await Products.findOne({ _id: idProduct })
-
-    //Tìm trong giỏ hàng xem thử user đã từng mua sản phẩm đó chưa
-    const carts = await Carts.findOne({ idUser: idUser, idProduct: idProduct})
-
-    //Kiểm tra xem User đã từng thêm sản phẩm này chưa
-    //Nếu không tìm thấy thì == null và insert vào
-    //Nếu tìm thấy thì sẽ update số lượng
-    if (!carts){
-
-        const dataInsert = {
-            idUser: idUser,
-            idProduct: idProduct,
-            nameProduct: product.name,
-            priceProduct: product.price,
-            count: count,
-            img: product.img1,
-        }
-
-        Carts.insertMany(dataInsert)
-
-        res.send("Thanh Cong!")
-
-    }else{     
-
-        carts.count += parseInt(count)
-
-        carts.save()
-
-        res.send("Thanh Cong!")
-
+    if (!idProduct) {
+      return res.status(400).json({
+        message: "Product ID is required.",
+      });
     }
 
-}
+    const quantity = Number(count);
 
-//Hàm Xóa Sản Phẩm
-// Hàm Xóa Sản Phẩm
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return res.status(400).json({
+        message: "Invalid quantity.",
+      });
+    }
+
+    const product = await Products.findById(idProduct);
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found.",
+      });
+    }
+
+    const cart = await Carts.findOne({
+      idUser,
+      idProduct,
+    });
+
+    if (!cart) {
+      const newCart = await Carts.create({
+        idUser,
+        idProduct,
+        nameProduct: product.name,
+        priceProduct: product.price,
+        count: quantity,
+        img: product.img1,
+      });
+
+      return res.status(201).json(newCart);
+    }
+
+    cart.count = Number(cart.count) + quantity;
+
+    await cart.save();
+
+    return res.json(cart);
+  } catch (error) {
+    console.error("Add cart error:", error);
+
+    return res.status(500).json({
+      message: "Unable to add product to cart.",
+    });
+  }
+};
+
+
 module.exports.deleteToCart = async (req, res) => {
-    const idUser = req.query.idUser
-    const idProduct = req.query.idProduct
+  try {
+    const idUser = req.user.id;
 
-    // Nếu có cả 2 id: Xóa 1 sản phẩm cụ thể (dùng cho nút Xóa trong Cart)
-    if (idUser && idProduct) {
-        await Carts.deleteOne({ idUser: idUser, idProduct: idProduct })
-        res.send("Xóa sản phẩm thành công!")
-    } 
-    // Nếu chỉ có idUser: Xóa toàn bộ giỏ hàng (dùng cho Checkout)
-    else if (idUser) {
-        await Carts.deleteMany({ idUser: idUser })
-        res.send("Xóa sản phẩm thành công!")
+    const idProduct = req.body.idProduct || req.query.idProduct;
+
+    if (idProduct) {
+      await Carts.deleteOne({
+        idUser,
+        idProduct,
+      });
+
+      return res.json({
+        message: "Product removed from cart.",
+      });
     }
-}
 
-//Hàm Sửa Sản Phẩm
+    await Carts.deleteMany({
+      idUser,
+    });
+
+    return res.json({
+      message: "Cart cleared.",
+    });
+  } catch (error) {
+    console.error("Delete cart error:", error);
+
+    return res.status(500).json({
+      message: "Unable to remove cart item.",
+    });
+  }
+};
+
+
 module.exports.updateToCart = async (req, res) => {
+  try {
+    const idUser = req.user.id;
 
-    //Lấy idUSer của user cần sửa
-     const idUser = req.query.idUser
+    const idProduct = req.body.idProduct || req.query.idProduct;
 
-    //Lấy idProduct của user cần sửa
-    const idProduct = req.query.idProduct
+    const count = req.body.count || req.query.count;
 
-    //Lấy count của user cần sửa
-    const count = req.query.count
+    const quantity = Number(count);
 
-    //Tìm đúng cái sản phẩm mà User cần sửa
-    var cart = await Carts.findOne({idUser: idUser, idProduct: idProduct})
+    if (!idProduct) {
+      return res.status(400).json({
+        message: "Product ID is required.",
+      });
+    }
 
-    cart.count = count
-    
-    cart.save()
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return res.status(400).json({
+        message: "Invalid quantity.",
+      });
+    }
 
-    res.send("Update Thanh Cong")
+    const cart = await Carts.findOne({
+      idUser,
+      idProduct,
+    });
 
-}
+    if (!cart) {
+      return res.status(404).json({
+        message: "Cart item not found.",
+      });
+    }
 
+    cart.count = quantity;
+
+    await cart.save();
+
+    return res.json(cart);
+  } catch (error) {
+    console.error("Update cart error:", error);
+
+    return res.status(500).json({
+      message: "Unable to update cart.",
+    });
+  }
+};
