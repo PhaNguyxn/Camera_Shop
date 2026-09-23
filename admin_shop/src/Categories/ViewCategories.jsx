@@ -39,53 +39,70 @@ const ViewCategories = () => {
     }
 
     return (
-        <div className="page-wrapper">
-            <div className="page-breadcrumb">
-                <div className="row">
-                    <div className="col-7 align-self-center">
-                        <h4 className="page-title text-truncate text-dark font-weight-medium mb-1">Create Category</h4>
-                        <div className="d-flex align-items-center">
-                            <nav aria-label="breadcrumb">
-                                <ol className="breadcrumb m-0 p-0">
-                                    <li className="breadcrumb-item"><a href="/" className="text-muted">Home</a></li>
-                                    <li className="breadcrumb-item text-muted active" aria-current="page">Create</li>
-                                </ol>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
+      <div className="page-wrapper">
+        <div className="page-breadcrumb">
+          <div className="row">
+            <div className="col-7 align-self-center">
+              <h4 className="page-title text-truncate text-dark font-weight-medium mb-1">
+                Create Category
+              </h4>
+              <div className="d-flex align-items-center">
+                <nav aria-label="breadcrumb">
+                  <ol className="breadcrumb m-0 p-0">
+                    <li className="breadcrumb-item">
+                      <a href="/" className="text-muted">
+                        Home
+                      </a>
+                    </li>
+                    <li
+                      className="breadcrumb-item text-muted active"
+                      aria-current="page"
+                    >
+                      Create
+                    </li>
+                  </ol>
+                </nav>
+              </div>
             </div>
-            <div className="container-fluid">
-                <div className="row">
-                    <div className="col-12">
-                        <div className="card" style={{ paddingTop: '1.5rem' }}>
-                            <div style={{ margin: '0 1.5rem 1.5rem' }}>
-                                <h5 className="card-title">Name Category</h5>
-                                <div className='d-flex justify-content-between'>
-                                    <input
-                                        onChange={(e) => setCategory({ ...category, ['category']: e.target.value })}
-                                        value={category?.category || ''}
-                                        className="form-control w-50"
-                                        type="text"
-                                        placeholder="Enter Name Category!"
-                                    />
-                                </div>
-                            </div>
-                            <div className="d-flex" style={{ margin: '0 1.5rem 1.5rem' }}>
-                                <button
-                                    disabled={!category?.category}
-                                    onClick={handleCreateCategory}
-                                    style={{ cursor: 'pointer', color: 'white' }}
-                                    className='btn btn-success'>
-                                    {categoryId ? 'Update Category' : 'Create Category'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+          </div>
         </div>
-    )
+        <div className="container-fluid">
+          <div className="row">
+            <div className="col-12">
+              <div className="card" style={{ paddingTop: "1.5rem" }}>
+                <div style={{ margin: "0 1.5rem 1.5rem" }}>
+                  <h5 className="card-title">Name Category</h5>
+                  <div className="d-flex justify-content-between">
+                    <input
+                      onChange={(e) =>
+                        setCategory({
+                          ...category,
+                          category: e.target.value,
+                        })
+                      }
+                      value={category?.category || ""}
+                      className="form-control w-50"
+                      type="text"
+                      placeholder="Enter Name Category!"
+                    />
+                  </div>
+                </div>
+                <div className="d-flex" style={{ margin: "0 1.5rem 1.5rem" }}>
+                  <button
+                    disabled={!category?.category}
+                    onClick={handleCreateCategory}
+                    style={{ cursor: "pointer", color: "white" }}
+                    className="btn btn-success"
+                  >
+                    {categoryId ? "Update Category" : "Create Category"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
 }
 
 export default ViewCategories;

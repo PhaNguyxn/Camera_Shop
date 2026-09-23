@@ -1,9 +1,8 @@
 import React, { useEffect } from 'react';
-import { Link, useHistory } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import feather from 'feather-icons';
 
 function Header(props) {
-    const history = useHistory();
 
     useEffect(() => {
         feather.replace();
