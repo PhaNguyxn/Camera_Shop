@@ -7,17 +7,40 @@ function Login() {
     const [password, setPassword] = useState('');
 
     const handlerLogin = async (e) => {
-        e.preventDefault();
-        const body = { email, password };
-        try {
-            const response = await UserAPI.postLogin(body);
-            sessionStorage.setItem('id_user', response._id);
-            sessionStorage.setItem('name_user', response.fullname);
-            alert("Đăng nhập thành công!");
-            window.location.href = '/'; 
-        } catch (error) {
-            alert("Sai email hoặc mật khẩu!");
+      e.preventDefault();
+
+      try {
+        const body = {
+          email: email.trim().toLowerCase(),
+          password,
+        };
+
+        const response = await UserAPI.postLogin(body);
+
+        if (!response || !response.user || !response.token) {
+          alert("Invalid login response.");
+          return;
         }
+
+        const user = response.user;
+        const token = response.token;
+
+        if (user.role !== "admin") {
+          alert("This account does not have admin permission.");
+          return;
+        }
+
+        sessionStorage.setItem("token", token);
+        sessionStorage.setItem("id_user", user._id);
+        sessionStorage.setItem("name_user", user.fullname);
+        sessionStorage.setItem("role", user.role);
+
+        window.location.href = "/";
+      } catch (error) {
+        console.error("Admin login error:", error);
+
+        alert(error.response?.data?.message || "Incorrect email or password.");
+      }
     };
 
     return (

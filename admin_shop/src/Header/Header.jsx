@@ -10,12 +10,14 @@ function Header(props) {
     }, []);
 
     const onLogout = (e) => {
-        e.preventDefault();
-        // Xóa thông tin đăng nhập
-        localStorage.removeItem('id_user');
-        localStorage.removeItem('name_user');
-        
-        history.push('/login');
+      e.preventDefault();
+
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("id_user");
+      sessionStorage.removeItem("name_user");
+      sessionStorage.removeItem("role");
+
+      window.location.href = "/login";
     };
 
     const LogoIcon = "/assets/images/logo-icon.png";

@@ -68,6 +68,9 @@ function SignIn() {
       }
 
       const user = response.user;
+      const token = response.token;
+
+      localStorage.setItem("token", token);
 
       sessionStorage.setItem("id_user", user._id);
       sessionStorage.setItem("name_user", user.fullname);
@@ -76,8 +79,7 @@ function SignIn() {
       dispatch(addSession(user._id));
 
       if (user.role === "admin") {
-        window.location.href =
-          process.env.REACT_APP_ADMIN_URL || "http://localhost:3001";
+        window.location.href = "http://localhost:3001";
 
         return;
       }

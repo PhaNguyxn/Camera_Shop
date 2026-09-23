@@ -1,6 +1,6 @@
-
 const Users = require('../../Model/users.model')
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 module.exports.index = async (req, res) => {
 
@@ -67,15 +67,19 @@ module.exports.login = async (req, res) => {
 
     if (!email || !password) {
       return res.status(400).json({
-        message: "Email và mật khẩu không được để trống",
+        message: "Email and password are required.",
       });
     }
 
-    const user = await Users.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await Users.findOne({
+      email: normalizedEmail,
+    });
 
     if (!user) {
       return res.status(401).json({
-        message: "Email hoặc mật khẩu không đúng",
+        message: "Incorrect email or password.",
       });
     }
 
@@ -83,23 +87,35 @@ module.exports.login = async (req, res) => {
 
     if (!isMatch) {
       return res.status(401).json({
-        message: "Email hoặc mật khẩu không đúng",
+        message: "Incorrect email or password.",
       });
     }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1d",
+      },
+    );
 
     const result = user.toObject();
 
     delete result.password;
 
     return res.status(200).json({
-      message: "Đăng nhập thành công",
+      message: "Signed in successfully.",
+      token,
       user: result,
     });
   } catch (error) {
     console.error("Login error:", error);
 
     return res.status(500).json({
-      message: "Server Error!",
+      message: "Server error.",
     });
   }
 };

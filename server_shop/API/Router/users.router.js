@@ -1,21 +1,20 @@
-var express = require('express')
+const express = require("express");
 
-var router = express.Router()
+const router = express.Router();
 
-const Users = require('../Controller/users.controller')
+const Users = require("../Controller/users.controller");
 
-router.get('/', Users.index)
+const { verifyToken, isAdmin } = require("../../Middleware/auth.middleware");
 
-router.delete('/:id', Users.delete)
+router.post("/signup", Users.signup);
+router.post("/login", Users.login);
 
-router.get('/:id', Users.detail)
+router.get("/", verifyToken, isAdmin, Users.index);
 
-router.post('/signup', Users.signup)
+router.get("/:id", verifyToken, isAdmin, Users.detail);
 
-router.put('/:id', Users.update)
+router.put("/:id", verifyToken, isAdmin, Users.update);
 
-router.delete('/:id', Users.delete)
+router.delete("/:id", verifyToken, isAdmin, Users.delete);
 
-router.post('/login', Users.login)
-
-module.exports = router
+module.exports = router;

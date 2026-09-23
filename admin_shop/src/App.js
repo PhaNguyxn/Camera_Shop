@@ -10,14 +10,15 @@ import ViewEdit from "./Products/Component/ViewEdit";
 import Categories from "./Categories/Categories";
 import ViewCategories from "./Categories/ViewCategories";
 import ViewHistory from "./History/ViewHistory";
+import Login from "./Authentication/Login";
 
 function Layout() {
   const role = sessionStorage.getItem("role");
   const idUser = sessionStorage.getItem("id_user");
+  const token = sessionStorage.getItem("token");
 
-  if (!idUser || role !== "admin") {
-    window.location.href = "http://localhost:3000/signin";
-    return null;
+  if (!token || !idUser || role !== "admin") {
+    return <Redirect to="/login" />;
   }
 
   return (
@@ -43,11 +44,9 @@ function Layout() {
         <Route path="/products/view-edit" component={ViewEdit} />
 
         <Route exact path="/categories" component={Categories} />
-
         <Route path="/categories/view-edit" component={ViewCategories} />
 
         <Route exact path="/history" component={History} />
-
         <Route path="/history/view" component={ViewHistory} />
 
         <Redirect to="/" />
@@ -59,7 +58,11 @@ function Layout() {
 function App() {
   return (
     <BrowserRouter>
-      <Layout />
+      <Switch>
+        <Route exact path="/login" component={Login} />
+
+        <Route path="/" component={Layout} />
+      </Switch>
     </BrowserRouter>
   );
 }

@@ -11,9 +11,20 @@ const axiosClient = axios.create({
   paramsSerializer: (params) => queryString.stringify(params),
 });
 
-axiosClient.interceptors.request.use(async (config) => {
-  return config;
-});
+axiosClient.interceptors.request.use(
+  (config) => {
+    const token = sessionStorage.getItem("token");
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
 
 axiosClient.interceptors.response.use(
   (response) => {
@@ -25,7 +36,16 @@ axiosClient.interceptors.response.use(
   },
 
   (error) => {
-    throw error;
+    if (error.response?.status === 401) {
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("id_user");
+      sessionStorage.removeItem("name_user");
+      sessionStorage.removeItem("role");
+
+      window.location.href = "/login";
+    }
+
+    return Promise.reject(error);
   },
 );
 
