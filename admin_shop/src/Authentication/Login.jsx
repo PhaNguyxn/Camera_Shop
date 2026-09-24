@@ -1,129 +1,136 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import UserAPI from '../API/UserAPI';
+import React, { useState } from "react";
+import { Redirect, useHistory } from "react-router-dom";
+import UserAPI from "../API/UserAPI";
+import { Field, Icon, Notice } from "../components/AdminUI";
+import { errorMessage } from "../utils/admin";
 
-function Login() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+export default function Login() {
+  const history = useHistory();
 
-    const handlerLogin = async (e) => {
-      e.preventDefault();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
-      try {
-        const body = {
-          email: email.trim().toLowerCase(),
-          password,
-        };
+  const loggedIn =
+    sessionStorage.getItem("token") &&
+    sessionStorage.getItem("id_user") &&
+    sessionStorage.getItem("role") === "admin";
 
-        const response = await UserAPI.postLogin(body);
+  if (loggedIn) {
+    return <Redirect to="/" />;
+  }
 
-        if (!response || !response.user || !response.token) {
-          alert("Invalid login response.");
-          return;
-        }
+  const submit = async (event) => {
+    event.preventDefault();
 
-        const user = response.user;
-        const token = response.token;
+    if (busy) return;
 
-        if (user.role !== "admin") {
-          alert("This account does not have admin permission.");
-          return;
-        }
+    setBusy(true);
+    setError("");
 
-        sessionStorage.setItem("token", token);
-        sessionStorage.setItem("id_user", user._id);
-        sessionStorage.setItem("name_user", user.fullname);
-        sessionStorage.setItem("role", user.role);
+    try {
+      const response = await UserAPI.postLogin({
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
-        window.location.href = "/";
-      } catch (error) {
-        console.error("Admin login error:", error);
-
-        alert(error.response?.data?.message || "Incorrect email or password.");
+      if (!response?.token || !response?.user?._id) {
+        throw new Error("Phản hồi đăng nhập không hợp lệ.");
       }
-    };
 
-    return (
-  <div
-    className="d-flex justify-content-center align-items-center"
-    style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #667eea, #764ba2)"
-    }}
-  >
-    <div
-      style={{
-        width: "100%",
-        maxWidth: "420px",
-        background: "#fff",
-        padding: "40px",
-        borderRadius: "12px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
-      }}
-    >
-      <div className="text-center mb-4">
-        <img
-          src="/assets/images/big/icon.png"
-          alt="logo"
-          style={{ width: "60px" }}
-        />
-        <h2 className="mt-3">Sign In</h2>
-        <p className="text-muted" style={{ fontSize: "14px" }}>
-          Welcome back! Please login to your account.
-        </p>
-      </div>
+      if (response.user.role !== "admin") {
+        throw new Error("Tài khoản này không có quyền quản trị.");
+      }
 
-      <form onSubmit={handlerLogin}>
-        <div className="mb-3">
-          <label>Email</label>
-          <input
-            type="email"
-            className="form-control"
-            placeholder="Enter your email"
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ borderRadius: "8px", padding: "10px" }}
-          />
+      sessionStorage.setItem("token", response.token);
+      sessionStorage.setItem("id_user", response.user._id);
+      sessionStorage.setItem("name_user", response.user.fullname || "");
+      sessionStorage.setItem("role", response.user.role);
+
+      history.replace("/");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="ad-login">
+      <section className="ad-login-intro">
+        <div className="ad-login-brand">
+          <Icon name="camera" size={28} />
+          CAMERA SHOP
         </div>
 
-        <div className="mb-3">
-          <label>Password</label>
-          <input
-            type="password"
-            className="form-control"
-            placeholder="Enter your password"
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ borderRadius: "8px", padding: "10px" }}
-          />
+        <div>
+          <p className="ad-eyebrow">ADMIN WORKSPACE</p>
+          <h1>Quản lý cửa hàng, trong một không gian.</h1>
+          <p>
+            Theo dõi đơn hàng, cập nhật sản phẩm và chăm sóc khách hàng từ hệ
+            thống quản trị Camera Shop.
+          </p>
         </div>
 
-        <button
-          type="submit"
-          className="btn w-100"
-          style={{
-            background: "#667eea",
-            color: "#fff",
-            padding: "10px",
-            borderRadius: "8px",
-            fontWeight: "bold"
-          }}
-        >
-          Sign In
-        </button>
-      </form>
+        <small>Camera Shop · Hệ thống quản trị</small>
+      </section>
 
-      <div className="text-center mt-4">
-        <span style={{ fontSize: "14px" }}>
-          Don't have an account?{" "}
-          <Link to="/register" style={{ color: "#ff4d6d", fontWeight: "bold" }}>
-            Sign Up
-          </Link>
-        </span>
-      </div>
+      <section className="ad-login-content">
+        <form className="ad-login-form" onSubmit={submit}>
+          <p className="ad-eyebrow">CHÀO MỪNG TRỞ LẠI</p>
+          <h2>Đăng nhập quản trị</h2>
+          <p className="ad-muted">
+            Nhập tài khoản để tiếp tục quản lý cửa hàng.
+          </p>
+
+          <Notice>{error}</Notice>
+
+          <Field label="Địa chỉ email">
+            <input
+              className="ad-input"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="admin@example.com"
+              autoComplete="username"
+              required
+              disabled={busy}
+            />
+          </Field>
+
+          <Field label="Mật khẩu">
+            <input
+              className="ad-input"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Nhập mật khẩu"
+              autoComplete="current-password"
+              required
+              disabled={busy}
+            />
+          </Field>
+
+          <label className="ad-login-check">
+            <input
+              type="checkbox"
+              checked={showPassword}
+              onChange={(event) => setShowPassword(event.target.checked)}
+            />
+            Hiện mật khẩu
+          </label>
+
+          <button
+            className="ad-btn ad-btn-primary ad-btn-wide"
+            type="submit"
+            disabled={busy}
+          >
+            {busy ? "Đang đăng nhập..." : "Đăng nhập"}
+          </button>
+        </form>
+      </section>
     </div>
-  </div>
-);
+  );
 }
-
-export default Login;

@@ -1,141 +1,151 @@
-import React, { useEffect, useState } from 'react';
-import ProductAPI from '../API/ProductAPI';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import ProductAPI from "../API/ProductAPI";
 
-function Categories(props) {
+import {
+  Page,
+  Panel,
+  Search,
+  Pager,
+  Notice,
+  LoadState,
+  EmptyRow,
+  Icon,
+} from "../components/AdminUI";
 
-    const [categories, setCategories] = useState([]);
-    const [temp, setTemp] = useState([]);
+import {
+  asList,
+  matches,
+  paginate,
+  useResource,
+  errorMessage,
+} from "../utils/admin";
 
-    useEffect(() => {
-        const fetchData = async () => {
-            const response = await ProductAPI.getCategories();
-            setCategories(response);
-            setTemp(response); // lưu dữ liệu gốc để search
-        };
+const loadCategories = async () => asList(await ProductAPI.getCategories());
 
-        fetchData();
-    }, []);
+export default function Categories() {
+  const resource = useResource(loadCategories);
 
-    // 🔍 SEARCH
-    const handleSearch = (e) => {
-        const value = e.target.value;
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [busyId, setBusyId] = useState("");
+  const [error, setError] = useState("");
 
-        if (!value) {
-            setCategories(temp);
-            return;
-        }
+  const categories = resource.data || [];
+  const filtered = categories.filter((category) =>
+    matches(query, category.category, category._id),
+  );
+  const result = paginate(filtered, page);
 
-        const filterData = temp.filter(item =>
-            item.category.toLowerCase().includes(value.toLowerCase())
-        );
+  const remove = async (category) => {
+    if (!window.confirm(`Xóa danh mục "${category.category}"?`)) return;
 
-        setCategories(filterData);
-    };
+    setBusyId(category._id);
+    setError("");
 
-    // 🗑 DELETE
-    const handleDelete = async (id) => {
-        const confirmDelete = window.confirm("Bạn có chắc muốn xóa không?");
-        if (!confirmDelete) return;
+    try {
+      await ProductAPI.deleteCategory(category._id);
+      resource.reload();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusyId("");
+    }
+  };
 
-        try {
-            await ProductAPI.deleteCategory(id);
+  return (
+    <Page
+      title="Danh mục"
+      subtitle="Tổ chức sản phẩm thành các nhóm dễ tìm kiếm."
+      action={
+        <Link className="ad-btn ad-btn-primary" to="/categories/view-edit">
+          <Icon name="plus" size={16} />
+          Thêm danh mục
+        </Link>
+      }
+    >
+      <Notice>{error}</Notice>
 
-            // cập nhật UI không reload
-            const newData = categories.filter(item => item._id !== id);
-            setCategories(newData);
-            setTemp(newData);
-
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    return (
-        <div className="page-wrapper">
-            <div className="page-breadcrumb">
-                <div className="row">
-                    <div className="col-7 align-self-center">
-                        <h4 className="page-title text-truncate text-dark font-weight-medium mb-1">Categories Manage</h4>
-                    </div>
-                </div>
-            </div>
-
-            <div className="container-fluid">
-                <div className="row">
-                    <div className="col-12">
-                        <div className="card">
-                            <div className="card-body">
-
-                                <h4 className="card-title">Categories</h4>
-
-                                <div className='d-flex justify-content-between'>
-                                    <input
-                                        className="form-control w-25"
-                                        type="text"
-                                        placeholder="Enter Search!"
-                                        onChange={handleSearch}
-                                    />
-
-                                    <a
-                                        href={'/categories/view-edit'}
-                                        className='btn btn-success'
-                                        style={{ color: 'white' }}
-                                    >
-                                        Create Category
-                                    </a>
-                                </div>
-
-                                <br />
-
-                                <div className="table-responsive">
-                                    <table className="table table-striped table-bordered no-wrap">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Category</th>
-                                                <th>Action</th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {
-                                                categories?.map(value => (
-                                                    <tr key={value._id}>
-                                                        <td>{value._id}</td>
-                                                        <td>{value.category}</td>
-                                                        <td>
-                                                            <a
-                                                                href={`/categories/view-edit?id=${value._id}`}
-                                                                className="btn btn-success"
-                                                                style={{ color: 'white' }}
-                                                            >
-                                                                Update
-                                                            </a>
-
-                                                            &nbsp;
-
-                                                            <button
-                                                                onClick={() => handleDelete(value._id)}
-                                                                className="btn btn-danger"
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            }
-                                        </tbody>
-
-                                    </table>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <Panel
+        title="Danh sách danh mục"
+        subtitle={`${categories.length} danh mục`}
+      >
+        <div className="ad-toolbar">
+          <Search
+            value={query}
+            placeholder="Tìm tên hoặc mã danh mục..."
+            onChange={(value) => {
+              setQuery(value);
+              setPage(1);
+            }}
+          />
+          <button
+            type="button"
+            className="ad-btn"
+            disabled={resource.loading}
+            onClick={resource.reload}
+          >
+            Làm mới
+          </button>
         </div>
-    );
-}
 
-export default Categories;
+        {resource.loading || resource.error ? (
+          <LoadState {...resource} />
+        ) : (
+          <>
+            <div className="ad-table-wrap">
+              <table className="ad-table">
+                <thead>
+                  <tr>
+                    <th>Danh mục</th>
+                    <th>Mã danh mục</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.rows.map((category) => (
+                    <tr key={category._id}>
+                      <td>
+                        <div className="ad-person">
+                          <span className="ad-avatar">
+                            <Icon name="layers" size={17} />
+                          </span>
+                          <strong>{category.category}</strong>
+                        </div>
+                      </td>
+
+                      <td>{category._id}</td>
+
+                      <td>
+                        <div className="ad-actions">
+                          <Link
+                            className="ad-btn ad-btn-small"
+                            to={`/categories/view-edit?id=${category._id}`}
+                          >
+                            Chỉnh sửa
+                          </Link>
+
+                          <button
+                            type="button"
+                            className="ad-btn ad-btn-small ad-btn-danger"
+                            disabled={Boolean(busyId)}
+                            onClick={() => remove(category)}
+                          >
+                            {busyId === category._id ? "Đang xóa..." : "Xóa"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {!result.rows.length && <EmptyRow columns={3} />}
+                </tbody>
+              </table>
+            </div>
+
+            <Pager data={result} onChange={setPage} />
+          </>
+        )}
+      </Panel>
+    </Page>
+  );
+}

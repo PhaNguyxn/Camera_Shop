@@ -1,283 +1,202 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { useLocation, Link } from "react-router-dom";
+import React, { useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import HistoryAPI from "../API/HistoryAPI";
 
-function useQuery() {
-    const { search } = useLocation();
-    return useMemo(() => new URLSearchParams(search), [search]);
-}
+import {
+  Page,
+  Panel,
+  LoadState,
+  BackLink,
+  Badge,
+  Picture,
+  EmptyRow,
+} from "../components/AdminUI";
 
-const ViewHistory = () => {
-    const historyId = useQuery().get('id');
-    const [order, setOrder] = useState(null);
-    const [loading, setLoading] = useState(true);
+import {
+  amount,
+  money,
+  dateTime,
+  shortId,
+  orderStatus,
+  paymentStatus,
+  ORDER_LABELS,
+  PAYMENT_LABELS,
+  useResource,
+} from "../utils/admin";
 
-    const formatDate = (date) => {
-        if (!date) return '';
-        const d = new Date(date);
-        return d.toLocaleString('vi-VN');
-    };
+export default function ViewHistory() {
+  const { search } = useLocation();
+  const orderId = new URLSearchParams(search).get("id");
 
-    const formatMoney = (value) => {
-      const number =
-        typeof value === "number"
-          ? value
-          : Number(String(value || "").replace(/[^\d]/g, "")) || 0;
-
-      return `${number.toLocaleString("vi-VN")} ₫`;
-    };
-
-    useEffect(() => {
-        if (historyId) {
-            const fetchDetail = async () => {
-                try {
-                    setLoading(true);
-                    const res = await HistoryAPI.getDetail(historyId);
-                    
-                    if (res && res._id) {
-                        setOrder(res);
-                    }
-                } catch (error) {
-                    console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchDetail();
-        }
-    }, [historyId]);
-
-    if (loading) {
-        return (
-            <div className="page-wrapper">
-                <div className="container-fluid">Đang tải dữ liệu...</div>
-            </div>
-        );
+  const loader = useCallback(async () => {
+    if (!orderId) {
+      throw new Error("Thiếu mã đơn hàng trong đường dẫn.");
     }
 
-    if (!order) {
-        return (
-            <div className="page-wrapper">
-                <div className="container-fluid">Không tìm thấy thông tin đơn hàng!</div>
-            </div>
-        );
+    const response = await HistoryAPI.getDetail(orderId);
+
+    if (!response?._id) {
+      throw new Error("Không tìm thấy đơn hàng.");
     }
 
+    return response;
+  }, [orderId]);
+
+  const resource = useResource(loader);
+
+  if (resource.loading || resource.error) {
     return (
-      <div className="page-wrapper">
-        <div className="page-breadcrumb">
-          <div className="row">
-            <div className="col-7 align-self-center">
-              <h4 className="page-title text-truncate text-dark font-weight-medium mb-1">
-                Chi tiết đơn hàng
-              </h4>
-              <div className="d-flex align-items-center">
-                <nav aria-label="breadcrumb">
-                  <ol className="breadcrumb m-0 p-0">
-                    <li className="breadcrumb-item">
-                      <Link to="/" className="text-muted">
-                        Home
-                      </Link>
-                    </li>
-                    <li className="breadcrumb-item text-muted active">
-                      Order History
-                    </li>
-                    <li className="breadcrumb-item text-muted active">
-                      ID: {order._id}
-                    </li>
-                  </ol>
-                </nav>
-              </div>
+      <Page title="Chi tiết đơn hàng" action={<BackLink to="/history" />}>
+        <Panel>
+          <LoadState {...resource} />
+        </Panel>
+      </Page>
+    );
+  }
+
+  const order = resource.data;
+  const cart = Array.isArray(order.cart) ? order.cart : [];
+  const status = orderStatus(order);
+  const payment = paymentStatus(order);
+
+  return (
+    <Page
+      title={`Đơn hàng #${order.orderCode || shortId(order._id)}`}
+      subtitle={`Đặt lúc ${dateTime(order.createdAt)}`}
+      action={<BackLink to="/history" />}
+    >
+      <div className="ad-split">
+        <Panel
+          title="Sản phẩm trong đơn"
+          subtitle={`${cart.length} dòng sản phẩm`}
+        >
+          <div className="ad-table-wrap">
+            <table className="ad-table">
+              <thead>
+                <tr>
+                  <th>Sản phẩm</th>
+                  <th>Đơn giá</th>
+                  <th>Số lượng</th>
+                  <th>Thành tiền</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {cart.map((product, index) => (
+                  <tr key={`${product.idProduct || "product"}-${index}`}>
+                    <td>
+                      <div className="ad-product-cell">
+                        <Picture src={product.img} alt={product.nameProduct} />
+                        <div>
+                          <strong className="ad-cell-title">
+                            {product.nameProduct || "Sản phẩm"}
+                          </strong>
+                          <span className="ad-cell-sub">
+                            {product.idProduct}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="ad-nowrap">{money(product.priceProduct)}</td>
+
+                    <td>{product.count}</td>
+
+                    <td className="ad-nowrap">
+                      <strong>
+                        {money(
+                          amount(product.priceProduct) *
+                            Number(product.count || 0),
+                        )}
+                      </strong>
+                    </td>
+                  </tr>
+                ))}
+
+                {!cart.length && (
+                  <EmptyRow
+                    columns={4}
+                    text="Đơn hàng chưa có thông tin sản phẩm."
+                  />
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="ad-panel-body">
+            <div className="ad-total" style={{ marginTop: 0 }}>
+              <span>Tổng giá trị đơn hàng</span>
+              <strong>{money(order.totalAmount ?? order.total)}</strong>
             </div>
           </div>
-        </div>
+        </Panel>
 
-        <div className="container-fluid">
-          <div className="row">
-            <div className="col-12">
-              <div className="card" style={{ paddingTop: "1.5rem" }}>
-                <div style={{ margin: "0 1.5rem 1.5rem" }}>
-                  <h5 className="card-title">Thông tin đơn hàng</h5>
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label>Full Name:</label>
-                      <input
-                        className="form-control"
-                        value={order.fullname || ""}
-                        disabled
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label>Phone:</label>
-                      <input
-                        className="form-control"
-                        value={order.phone || ""}
-                        disabled
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label>Email:</label>
-
-                      <input
-                        className="form-control"
-                        value={order.email || ""}
-                        disabled
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label>Mã đơn hàng:</label>
-
-                      <input
-                        className="form-control"
-                        value={order.orderCode || order._id}
-                        disabled
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label>Phương thức thanh toán:</label>
-
-                      <input
-                        className="form-control"
-                        value={
-                          order.paymentMethod === "PAYOS"
-                            ? "QR / payOS"
-                            : "Thanh toán khi nhận hàng"
-                        }
-                        disabled
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label>Trạng thái thanh toán:</label>
-
-                      <input
-                        className="form-control"
-                        value={
-                          (order.paymentStatus ||
-                            (order.status ? "PAID" : "UNPAID")) === "PAID"
-                            ? "Đã thanh toán"
-                            : "Chưa thanh toán"
-                        }
-                        disabled
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label>Trạng thái đơn hàng:</label>
-
-                      <input
-                        className="form-control"
-                        value={
-                          {
-                            PENDING: "Chờ xác nhận",
-
-                            CONFIRMED: "Đã xác nhận",
-
-                            SHIPPING: "Đang giao",
-
-                            DELIVERED: "Đã giao",
-
-                            CANCELLED: "Đã hủy",
-                          }[
-                            order.orderStatus ||
-                              (order.delivery ? "SHIPPING" : "PENDING")
-                          ]
-                        }
-                        disabled
-                      />
-                    </div>
-                    <div className="col-12 mb-3">
-                      <label>Address:</label>
-                      <input
-                        className="form-control"
-                        value={order.address || ""}
-                        disabled
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label>Total:</label>
-                      <input
-                        className="form-control text-danger font-weight-bold"
-                        value={formatMoney(order.totalAmount ?? order.total)}
-                        disabled
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label>Order Date:</label>
-                      <input
-                        className="form-control"
-                        value={formatDate(order.createdAt)}
-                        disabled
-                      />
-                    </div>
-                  </div>
+        <div>
+          <Panel title="Thông tin khách hàng">
+            <div className="ad-panel-body">
+              <dl className="ad-detail-grid">
+                <div>
+                  <dt>Họ và tên</dt>
+                  <dd>{order.fullname || "—"}</dd>
                 </div>
 
-                <div style={{ margin: "0 1.5rem 1.5rem" }}>
-                  <h5 className="card-title">Sản phẩm trong đơn hàng</h5>
-                  <div className="table-responsive">
-                    <table className="table table-bordered">
-                      <thead className="bg-light">
-                        <tr>
-                          <th>Ảnh</th>
-                          <th>Sản phẩm</th>
-                          <th>Đơn giá</th>
-                          <th>Số lượng</th>
-                          <th>Thành tiền</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {order.cart?.map((product, index) => (
-                          <tr key={index}>
-                            <td>
-                              <img
-                                src={product.img}
-                                alt={product.nameProduct}
-                                style={{
-                                  width: "70px",
-                                  height: "70px",
-                                  objectFit: "cover",
-                                  borderRadius: "6px",
-                                }}
-                              />
-                            </td>
-
-                            <td>
-                              <strong>{product.nameProduct}</strong>
-
-                              <div className="text-muted small">
-                                ID: {product.idProduct}
-                              </div>
-                            </td>
-
-                            <td>{formatMoney(product.priceProduct)}</td>
-
-                            <td>{product.count}</td>
-
-                            <td>
-                              <strong>
-                                {formatMoney(
-                                  Number(product.priceProduct) *
-                                    Number(product.count),
-                                )}
-                              </strong>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                <div>
+                  <dt>Số điện thoại</dt>
+                  <dd>{order.phone || "—"}</dd>
                 </div>
 
-                <div className="d-flex" style={{ margin: "0 1.5rem 1.5rem" }}>
-                  <Link to="/history" className="btn btn-secondary">
-                    Quay lại danh sách đơn hàng
-                  </Link>
+                <div className="ad-full">
+                  <dt>Email</dt>
+                  <dd>{order.email || "—"}</dd>
                 </div>
-              </div>
+
+                <div className="ad-full">
+                  <dt>Địa chỉ nhận hàng</dt>
+                  <dd>{order.address || "—"}</dd>
+                </div>
+              </dl>
             </div>
-          </div>
+          </Panel>
+
+          <Panel title="Thanh toán & vận chuyển">
+            <div className="ad-panel-body">
+              <dl className="ad-detail-grid">
+                <div className="ad-full">
+                  <dt>Phương thức thanh toán</dt>
+                  <dd>
+                    {order.paymentMethod === "PAYOS"
+                      ? "QR / payOS"
+                      : "Thanh toán khi nhận hàng (COD)"}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt>Thanh toán</dt>
+                  <dd>
+                    <Badge dark={payment === "PAID"}>
+                      {PAYMENT_LABELS[payment] || payment}
+                    </Badge>
+                  </dd>
+                </div>
+
+                <div>
+                  <dt>Trạng thái đơn</dt>
+                  <dd>
+                    <Badge dark={status === "DELIVERED"}>
+                      {ORDER_LABELS[status] || status}
+                    </Badge>
+                  </dd>
+                </div>
+
+                <div className="ad-full">
+                  <dt>Mã hệ thống</dt>
+                  <dd>{order._id}</dd>
+                </div>
+              </dl>
+            </div>
+          </Panel>
         </div>
       </div>
-    );
-};
-
-export default ViewHistory;
+    </Page>
+  );
+}

@@ -1,196 +1,234 @@
-import React, { useCallback, useEffect, useState } from "react";
-import queryString from "query-string";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import ProductAPI from "../API/ProductAPI";
-import Pagination from "./Component/Pagination";
 
-function Products() {
-  const [products, setProducts] = useState([]);
-  const [temp, setTemp] = useState([]);
+import {
+  Page,
+  Panel,
+  Search,
+  Pager,
+  LoadState,
+  Notice,
+  EmptyRow,
+  Picture,
+  Icon,
+} from "../components/AdminUI";
 
-  const [pagination, setPagination] = useState({
-    page: "1",
-    count: "8",
-    search: "",
-    category: "all",
-  });
+import {
+  asList,
+  money,
+  matches,
+  paginate,
+  useResource,
+  errorMessage,
+} from "../utils/admin";
 
-  const [totalPage, setTotalPage] = useState();
 
-  const onChangeText = (e) => {
-    const value = e.target.value;
-    setPagination({ ...pagination, search: value });
+function resolveCategoryName(category, categoryMap) {
+  if (!category) {
+    return "Chưa phân loại";
+  }
 
-    if (!value) {
-      setProducts(temp);
+  if (typeof category === "object") {
+    const name = category.category || category.name;
+
+    if (typeof name === "string" && name.trim()) {
+      return name.trim();
+    }
+
+    return categoryMap.get(String(category._id || "")) || "Chưa xác định";
+  }
+
+  const value = String(category).trim();
+
+  if (!value) {
+    return "Chưa phân loại";
+  }
+
+  const matchedName = categoryMap.get(value);
+
+  if (matchedName) {
+    return matchedName;
+  }
+
+  if (/^[a-f\d]{24}$/i.test(value)) {
+    return "Chưa xác định";
+  }
+
+  return value;
+}
+
+async function loadProducts() {
+  const [productsResponse, categoriesResponse] = await Promise.all([
+    ProductAPI.getAPI(),
+    ProductAPI.getCategories(),
+  ]);
+
+  const products = asList(productsResponse);
+  const categories = asList(categoriesResponse);
+
+  const categoryMap = new Map(
+    categories.map((category) => [
+      String(category._id),
+      category.category || category.name || "Chưa xác định",
+    ]),
+  );
+
+  return products.map((product) => ({
+    ...product,
+    displayCategory: resolveCategoryName(product.category, categoryMap),
+  }));
+}
+
+export default function Products() {
+  const resource = useResource(loadProducts);
+
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [busyId, setBusyId] = useState("");
+  const [error, setError] = useState("");
+
+  const products = resource.data || [];
+
+  const filtered = products.filter((product) =>
+    matches(query, product.name, product.displayCategory),
+  );
+
+  const result = paginate(filtered, page);
+
+  const remove = async (product) => {
+    if (busyId) return;
+
+    if (!window.confirm(`Xóa sản phẩm "${product.name}"?`)) {
       return;
     }
 
-    const searchProducts = temp.filter((item) =>
-      item.name.toLowerCase().includes(value.toLowerCase()),
-    );
-
-    setProducts(searchProducts);
-  };
-
-  // 🔄 CHANGE PAGE
-  const handlerChangePage = (value) => {
-    setPagination({
-      ...pagination,
-      page: value,
-    });
-  };
-
-  // 🗑 DELETE
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
+    setBusyId(product._id);
+    setError("");
 
     try {
-      await ProductAPI.deleteProduct(id);
-      alert("Xóa thành công!");
-      fetchAllData(); // reload lại list
+      await ProductAPI.deleteProduct(product._id);
+      resource.reload();
     } catch (err) {
-      console.error(err);
-      alert("Xóa thất bại!");
+      setError(errorMessage(err));
+    } finally {
+      setBusyId("");
     }
   };
-
-  const fetchAllData = useCallback(async () => {
-    try {
-      const params = {
-        page: pagination.page,
-        count: pagination.count,
-        category: pagination.category,
-      };
-
-      const query = "?" + queryString.stringify(params);
-
-      const { products, total } = await ProductAPI.getPagination(query);
-
-      setProducts(products);
-      setTemp(products);
-
-      const totalPage = Math.ceil(parseInt(total) / parseInt(pagination.count));
-      setTotalPage(totalPage);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [pagination.page, pagination.count, pagination.category]);
-
-  useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
 
   return (
-    <div className="page-wrapper">
-      <div className="page-breadcrumb">
-        <div className="row">
-          <div className="col-7 align-self-center">
-            <h4 className="page-title text-truncate text-dark font-weight-medium mb-1">
-              Products Manage
-            </h4>
-          </div>
+    <Page
+      title="Sản phẩm"
+      subtitle="Quản lý sản phẩm, giá bán và hình ảnh của cửa hàng."
+      action={
+        <Link className="ad-btn ad-btn-primary" to="/products/view-edit">
+          <Icon name="plus" size={16} />
+          Thêm sản phẩm
+        </Link>
+      }
+    >
+      <Notice>{error}</Notice>
+
+      <Panel
+        title="Danh sách sản phẩm"
+        subtitle={`${products.length} sản phẩm`}
+      >
+        <div className="ad-toolbar">
+          <Search
+            value={query}
+            placeholder="Tìm tên sản phẩm hoặc danh mục..."
+            onChange={(value) => {
+              setQuery(value);
+              setPage(1);
+            }}
+          />
+
+          <button
+            className="ad-btn"
+            type="button"
+            disabled={resource.loading || Boolean(busyId)}
+            onClick={resource.reload}
+          >
+            Làm mới
+          </button>
         </div>
-      </div>
 
-      <div className="container-fluid">
-        <div className="card">
-          <div className="card-body">
-            <h4 className="card-title">Products</h4>
-
-            <div className="d-flex justify-content-between">
-              <input
-                className="form-control w-25"
-                onChange={onChangeText}
-                placeholder="Enter Search!"
-              />
-
-              <a
-                href={`/products/view-edit`}
-                style={{ cursor: "pointer", color: "white" }}
-                className="btn btn-success"
-              >
-                Create Product
-              </a>
-            </div>
-
-            <br />
-
-            <div className="table-responsive">
-              <table className="table table-striped table-bordered no-wrap">
+        {resource.loading || resource.error ? (
+          <LoadState {...resource} />
+        ) : (
+          <>
+            <div className="ad-table-wrap">
+              <table className="ad-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Price</th>
-                    <th>Image</th>
-                    <th>Description</th>
-                    <th>Category</th>
-                    <th>Edit</th>
+                    <th>Sản phẩm</th>
+                    <th>Danh mục</th>
+                    <th>Giá bán</th>
+                    <th>Thao tác</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {products.map((value) => (
-                    <tr key={value._id}>
-                      <td>{value._id}</td>
-                      <td>{value.name}</td>
-                      <td>{value.price}</td>
-
+                  {result.rows.map((product) => (
+                    <tr key={product._id}>
                       <td>
-                        <img
-                          src={value.img1}
-                          style={{ height: "60px", width: "60px" }}
-                          alt=""
-                        />
-                      </td>
+                        <div className="ad-product-cell">
+                          <Picture src={product.img1} alt={product.name} />
 
-                      <td>
-                        <div title={value.description}>
-                          {value.description && value.description.length > 50
-                            ? value.description.substring(0, 50) + "..."
-                            : value.description}
+                          <div>
+                            <Link
+                              className="ad-cell-title"
+                              to={`/products/view-edit?id=${product._id}`}
+                            >
+                              {product.name}
+                            </Link>
+
+                            <span className="ad-cell-sub">{product._id}</span>
+                          </div>
                         </div>
                       </td>
 
                       <td>
-                        {typeof value.category === "object"
-                          ? value.category.name
-                          : value.category}
+                        <span className="ad-badge">
+                          {product.displayCategory}
+                        </span>
+                      </td>
+
+                      <td className="ad-nowrap">
+                        <strong>{money(product.price)}</strong>
                       </td>
 
                       <td>
-                        <a
-                          href={`/products/view-edit?id=${value._id}`}
-                          style={{ cursor: "pointer", color: "white" }}
-                          className="btn btn-success"
-                        >
-                          Update
-                        </a>
-                        &nbsp;
-                        {/* ✅ DELETE */}
-                        <button
-                          className="btn btn-danger"
-                          onClick={() => handleDelete(value._id)}
-                        >
-                          Delete
-                        </button>
+                        <div className="ad-actions">
+                          <Link
+                            className="ad-btn ad-btn-small"
+                            to={`/products/view-edit?id=${product._id}`}
+                          >
+                            Chỉnh sửa
+                          </Link>
+
+                          <button
+                            className="ad-btn ad-btn-small ad-btn-danger"
+                            type="button"
+                            disabled={Boolean(busyId)}
+                            onClick={() => remove(product)}
+                          >
+                            {busyId === product._id ? "Đang xóa..." : "Xóa"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
+
+                  {!result.rows.length && <EmptyRow columns={4} />}
                 </tbody>
               </table>
-
-              <Pagination
-                pagination={pagination}
-                handlerChangePage={handlerChangePage}
-                totalPage={totalPage}
-              />
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
+
+            <Pager data={result} onChange={setPage} />
+          </>
+        )}
+      </Panel>
+    </Page>
   );
 }
-
-export default Products;

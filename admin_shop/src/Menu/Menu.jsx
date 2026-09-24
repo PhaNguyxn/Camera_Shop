@@ -1,53 +1,55 @@
-import React, { useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import feather from "feather-icons";
+import React from "react";
+import { Link, NavLink } from "react-router-dom";
+import { Icon } from "../components/AdminUI";
 
-const menuItems = [
-  { to: "/", label: "Tổng quan", icon: "grid", exact: true },
-  { to: "/users", label: "Người dùng", icon: "users" },
+const items = [
+  { to: "/", label: "Tổng quan", icon: "dashboard", exact: true },
   { to: "/products", label: "Sản phẩm", icon: "camera" },
   { to: "/categories", label: "Danh mục", icon: "layers" },
-  { to: "/history", label: "Đơn hàng", icon: "shopping-bag" },
+  { to: "/history", label: "Đơn hàng", icon: "bag" },
+  { to: "/users", label: "Người dùng", icon: "users" },
 ];
 
-function Menu() {
-  const location = useLocation();
-
-  useEffect(() => {
-    feather.replace();
-  }, [location.pathname]);
-
+export default function Menu({ open, onClose }) {
   return (
-    <aside className="left-sidebar" data-sidebarbg="skin6">
-      <div className="scroll-sidebar" data-sidebarbg="skin6">
-        <nav className="sidebar-nav" aria-label="Menu quản trị">
-          <ul id="sidebarnav">
-            <li className="nav-small-cap">
-              <span className="hide-menu">QUẢN TRỊ</span>
-            </li>
+    <aside id="admin-sidebar" className={`ad-sidebar ${open ? "is-open" : ""}`}>
+      <Link className="ad-brand" to="/" onClick={onClose}>
+        <span className="ad-brand-mark">
+          <Icon name="camera" size={22} />
+        </span>
 
-            {menuItems.map((item) => (
-              <li className="sidebar-item" key={item.to}>
-                <NavLink
-                  exact={item.exact}
-                  to={item.to}
-                  className="sidebar-link"
-                  activeClassName="active"
-                >
-                  <i
-                    data-feather={item.icon}
-                    className="feather-icon"
-                    aria-hidden="true"
-                  />
-                  <span className="hide-menu">{item.label}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
+        <span>
+          <strong>CAMERA SHOP</strong>
+          <small>ADMIN WORKSPACE</small>
+        </span>
+      </Link>
+
+      <button
+        type="button"
+        className="ad-btn ad-sidebar-close"
+        onClick={onClose}
+      >
+        <Icon name="close" size={16} />
+        Đóng menu
+      </button>
+
+      <div className="ad-nav-label">QUẢN LÝ CỬA HÀNG</div>
+
+      <nav className="ad-nav" aria-label="Menu quản trị">
+        {items.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            exact={item.exact}
+            className="ad-nav-link"
+            activeClassName="active"
+            onClick={onClose}
+          >
+            <Icon name={item.icon} />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </aside>
   );
 }
-
-export default Menu;

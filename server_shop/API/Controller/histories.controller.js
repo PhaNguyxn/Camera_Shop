@@ -19,9 +19,9 @@ module.exports.index = async (req, res) => {
 
     const histories = await Histories.find({
       idUser,
-    }).sort({
-      createdAt: -1,
-    });
+    })
+      .sort({ createdAt: -1 })
+      .lean();
 
     return res.json(histories);
   } catch (error) {
@@ -36,26 +36,34 @@ module.exports.index = async (req, res) => {
 
 module.exports.detail = async (req, res) => {
   try {
-    const id = req.params.id;
-    const idUser = req.user.id;
+    const { id } = req.params;
 
-    const history = await Histories.findOne({
-      _id: id,
-      idUser,
-    });
+    if (!/^[a-f\d]{24}$/i.test(String(id))) {
+      return res.status(400).json({
+        message: "Mã đơn hàng không hợp lệ",
+      });
+    }
 
-    if (!history) {
+    const filter = { _id: id };
+
+    if (req.user.role !== "admin") {
+      filter.idUser = req.user.id;
+    }
+
+    const order = await Histories.findOne(filter).lean();
+
+    if (!order) {
       return res.status(404).json({
         message: "Không tìm thấy đơn hàng",
       });
     }
 
-    return res.json(history);
+    return res.json(order);
   } catch (error) {
     console.error("Get history detail error:", error);
 
     return res.status(500).json({
-      message: "Không thể tải đơn hàng",
+      message: "Không thể tải chi tiết đơn hàng",
     });
   }
 };
@@ -63,9 +71,7 @@ module.exports.detail = async (req, res) => {
 
 module.exports.history = async (req, res) => {
   try {
-    const histories = await Histories.find().sort({
-      createdAt: -1,
-    });
+    const histories = await Histories.find().sort({ createdAt: -1 }).lean();
 
     return res.json(histories);
   } catch (error) {
@@ -266,9 +272,14 @@ module.exports.updateStatus = async (req, res) => {
 
 module.exports.updateOrder = async (req, res) => {
   try {
-    const id = req.params.id;
+    const { id } = req.params;
+    const { orderStatus, paymentStatus } = req.body || {};
 
-    const { orderStatus, paymentStatus } = req.body;
+    if (!/^[a-f\d]{24}$/i.test(String(id))) {
+      return res.status(400).json({
+        message: "Mã đơn hàng không hợp lệ",
+      });
+    }
 
     const validOrderStatuses = [
       "PENDING",
@@ -280,54 +291,108 @@ module.exports.updateOrder = async (req, res) => {
 
     const validPaymentStatuses = ["UNPAID", "PAID"];
 
-    const order = await Histories.findById(id);
+    if (orderStatus === undefined && paymentStatus === undefined) {
+      return res.status(400).json({
+        message: "Chưa có trạng thái cần cập nhật",
+      });
+    }
 
-    if (!order) {
+    if (
+      orderStatus !== undefined &&
+      !validOrderStatuses.includes(orderStatus)
+    ) {
+      return res.status(400).json({
+        message: "Trạng thái đơn hàng không hợp lệ",
+      });
+    }
+
+    if (
+      paymentStatus !== undefined &&
+      !validPaymentStatuses.includes(paymentStatus)
+    ) {
+      return res.status(400).json({
+        message: "Trạng thái thanh toán không hợp lệ",
+      });
+    }
+
+    const currentOrder = await Histories.findById(id)
+      .select("_id paymentMethod paymentStatus status paidAt")
+      .lean();
+
+    if (!currentOrder) {
       return res.status(404).json({
         message: "Không tìm thấy đơn hàng",
       });
     }
 
+    if (paymentStatus !== undefined && currentOrder.paymentMethod === "PAYOS") {
+      return res.status(400).json({
+        message: "Thanh toán PAYOS phải được xác nhận tự động",
+      });
+    }
+
+    const changes = {};
+
     if (orderStatus !== undefined) {
-      if (!validOrderStatuses.includes(orderStatus)) {
-        return res.status(400).json({
-          message: "Trạng thái đơn hàng không hợp lệ",
-        });
-      }
-
-      order.orderStatus = orderStatus;
-
-      order.delivery = ["SHIPPING", "DELIVERED"].includes(orderStatus);
+      changes.orderStatus = orderStatus;
+      changes.delivery = ["SHIPPING", "DELIVERED"].includes(orderStatus);
     }
 
     if (paymentStatus !== undefined) {
-      if (!validPaymentStatuses.includes(paymentStatus)) {
-        return res.status(400).json({
-          message: "Trạng thái thanh toán không hợp lệ",
-        });
+      const paid = paymentStatus === "PAID";
+
+      changes.paymentStatus = paymentStatus;
+      changes.status = paid;
+
+      if (!paid) {
+        changes.paidAt = null;
+      } else {
+        const alreadyPaid =
+          currentOrder.paymentStatus === "PAID" ||
+          (!currentOrder.paymentStatus && currentOrder.status === true);
+
+        changes.paidAt =
+          alreadyPaid && currentOrder.paidAt ? currentOrder.paidAt : new Date();
       }
-
-      if (order.paymentMethod === "PAYOS") {
-        return res.status(400).json({
-          message: "Thanh toán PAYOS phải được xác nhận tự động",
-        });
-      }
-
-      order.paymentStatus = paymentStatus;
-
-      order.status = paymentStatus === "PAID";
-
-      order.paidAt = paymentStatus === "PAID" ? new Date() : null;
     }
 
-    await order.save();
+    const filter = { _id: id };
+
+    if (paymentStatus !== undefined) {
+      filter.paymentMethod = { $ne: "PAYOS" };
+    }
+
+    const updatedOrder = await Histories.findOneAndUpdate(
+      filter,
+      {
+        $set: changes,
+      },
+      {
+        new: true,
+        runValidators: true,
+        context: "query",
+      },
+    ).lean();
+
+    if (!updatedOrder) {
+      return res.status(409).json({
+        message:
+          "Đơn hàng đã thay đổi hoặc không còn tồn tại. Vui lòng tải lại.",
+      });
+    }
 
     return res.json({
       message: "Cập nhật đơn hàng thành công",
-      order,
+      order: updatedOrder,
     });
   } catch (error) {
     console.error("Update order error:", error);
+
+    if (error.name === "ValidationError" || error.name === "CastError") {
+      return res.status(400).json({
+        message: "Dữ liệu cập nhật đơn hàng không hợp lệ",
+      });
+    }
 
     return res.status(500).json({
       message: "Có lỗi xảy ra khi cập nhật đơn hàng",

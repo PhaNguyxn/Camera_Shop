@@ -1,84 +1,68 @@
-import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
-import feather from "feather-icons";
+import React from "react";
+import { useHistory, useLocation } from "react-router-dom";
+import { Icon } from "../components/AdminUI";
 
-function Header() {
-  useEffect(() => {
-    feather.replace();
-  }, []);
+const titles = {
+  users: "Người dùng",
+  products: "Sản phẩm",
+  categories: "Danh mục",
+  history: "Đơn hàng",
+};
 
-  const onLogout = () => {
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("id_user");
-    sessionStorage.removeItem("name_user");
-    sessionStorage.removeItem("role");
+export default function Header({ onMenu, menuOpen }) {
+  const history = useHistory();
+  const location = useLocation();
 
-    window.location.href = "/login";
+  const section = location.pathname.split("/")[1];
+  const title = titles[section] || "Tổng quan";
+  const name = sessionStorage.getItem("name_user") || "Quản trị viên";
+
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(-2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+
+  const logout = () => {
+    ["token", "id_user", "name_user", "role"].forEach((key) => {
+      sessionStorage.removeItem(key);
+    });
+
+    history.replace("/login");
   };
 
-  const adminName = sessionStorage.getItem("name_user") || "ADMIN";
-
   return (
-    <header className="topbar" data-navbarbg="skin6">
-      <nav className="navbar top-navbar navbar-expand-md">
-        <div className="navbar-header" data-logobg="skin6">
-          <button
-            className="nav-toggler waves-effect waves-light d-block d-md-none border-0 bg-transparent"
-            type="button"
-            aria-label="Mở menu"
-          >
-            <i className="ti-menu ti-close" />
-          </button>
+    <header className="ad-topbar">
+      <div className="ad-actions">
+        <button
+          type="button"
+          className="ad-btn ad-mobile-menu"
+          onClick={onMenu}
+          aria-label="Mở menu"
+          aria-expanded={menuOpen}
+          aria-controls="admin-sidebar"
+        >
+          <Icon name="menu" />
+        </button>
 
-          <div className="navbar-brand">
-            <Link to="/">
-              <span className="admin-brand-name">CAMERA SHOP</span>
-            </Link>
-          </div>
+        <span className="ad-topbar-title">{title}</span>
+      </div>
 
-          <button
-            className="topbartoggler d-block d-md-none waves-effect waves-light border-0 bg-transparent"
-            type="button"
-            data-toggle="collapse"
-            data-target="#navbarSupportedContent"
-            aria-label="Mở tài khoản"
-          >
-            <i className="ti-more" />
-          </button>
+      <div className="ad-topbar-account">
+        <span className="ad-avatar">{initials || "AD"}</span>
+
+        <div className="ad-account-info">
+          <div className="ad-account-name">{name}</div>
+          <div className="ad-account-role">Quản trị viên</div>
         </div>
 
-        <div className="navbar-collapse collapse" id="navbarSupportedContent">
-          <ul className="navbar-nav ml-auto">
-            <li className="nav-item dropdown">
-              <button
-                type="button"
-                className="nav-link dropdown-toggle border-0 bg-transparent"
-                data-toggle="dropdown"
-                aria-haspopup="true"
-                aria-expanded="false"
-              >
-                <span className="text-dark font-weight-medium">
-                  Xin chào, {adminName}
-                </span>
-                <i data-feather="chevron-down" className="svg-icon ml-2" />
-              </button>
-
-              <div className="dropdown-menu dropdown-menu-right user-dd">
-                <button
-                  type="button"
-                  className="dropdown-item border-0 bg-transparent w-100 text-left"
-                  onClick={onLogout}
-                >
-                  <i data-feather="log-out" className="svg-icon mr-2" />
-                  Đăng xuất
-                </button>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </nav>
+        <button type="button" className="ad-btn ad-btn-small" onClick={logout}>
+          <Icon name="logout" size={16} />
+          Đăng xuất
+        </button>
+      </div>
     </header>
   );
 }
-
-export default Header;

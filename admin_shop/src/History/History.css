@@ -111,3 +111,52 @@
     min-width: 1000px;
   }
 }
+
+.order-stat-grid {
+  gap: 16px;
+}
+
+.order-stat-card {
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.order-stat-card strong {
+  color: #171717;
+  font-size: 25px;
+}
+
+.order-toolbar input,
+.order-toolbar select {
+  min-width: 0;
+}
+
+.payment-method-badge,
+.admin-status {
+  display: inline-block;
+  padding: 6px 11px;
+  border: 1px solid #dedede;
+  border-radius: 999px;
+  background: #f5f5f5;
+  color: #262626;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.payment-paid,
+.payment-unpaid {
+  border-color: #d4d4d4;
+  background: #fff;
+  color: #262626;
+}
+
+@media (max-width: 767px) {
+  .order-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
