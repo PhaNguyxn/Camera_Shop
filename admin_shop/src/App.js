@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom";
+import { useState } from "react";
 
 import Header from "./Header/Header";
 import History from "./History/History";
@@ -13,6 +14,7 @@ import ViewHistory from "./History/ViewHistory";
 import Login from "./Authentication/Login";
 
 function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const role = sessionStorage.getItem("role");
   const idUser = sessionStorage.getItem("id_user");
   const token = sessionStorage.getItem("token");
@@ -24,6 +26,7 @@ function Layout() {
   return (
     <div
       id="main-wrapper"
+      className={sidebarOpen ? "admin-mobile-open" : ""}
       data-theme="light"
       data-layout="vertical"
       data-navbarbg="skin6"
@@ -32,8 +35,9 @@ function Layout() {
       data-header-position="fixed"
       data-boxed-layout="full"
     >
-      <Header />
-      <Menu />
+      <Header onToggleMenu={() => setSidebarOpen(open => !open)} />
+      <Menu onNavigate={() => setSidebarOpen(false)} />
+      {sidebarOpen && <button type="button" className="admin-sidebar-backdrop" aria-label="Đóng menu" onClick={() => setSidebarOpen(false)} />}
 
       <Switch>
         <Route exact path="/" component={Home} />

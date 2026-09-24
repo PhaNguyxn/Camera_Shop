@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Link } from "react-router-dom";
 import feather from 'feather-icons';
 
-function Header(props) {
+function Header({ onToggleMenu }) {
 
     useEffect(() => {
         feather.replace();
@@ -28,7 +28,7 @@ function Header(props) {
         <header className="topbar" data-navbarbg="skin6">
             <nav className="navbar top-navbar navbar-expand-md">
                 <div className="navbar-header" data-logobg="skin6">
-                    <button className="nav-toggler waves-effect waves-light d-block d-md-none border-0 bg-transparent" type="button">
+                    <button className="admin-nav-toggle waves-effect waves-light d-block d-md-none border-0 bg-transparent" type="button" aria-label="Mở menu" onClick={onToggleMenu}>
                         <i className="ti-menu ti-close"></i>
                     </button>
                     

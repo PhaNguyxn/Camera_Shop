@@ -12,6 +12,25 @@ code {
     monospace;
 }
 
+@media (max-width: 767px) {
+  #main-wrapper.admin-mobile-open .left-sidebar {
+    left: 0;
+    transform: translateX(0);
+    z-index: 1100;
+  }
+  .admin-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1090;
+    border: 0;
+    background: rgba(15, 23, 42, .45);
+  }
+  .page-wrapper .container-fluid { padding-left: 16px; padding-right: 16px; }
+  .page-wrapper .card-body { padding: 1rem; }
+  .page-wrapper input.w-25, .page-wrapper input.w-50 { width: 100% !important; }
+  .page-wrapper .d-flex.justify-content-between { flex-wrap: wrap; gap: .75rem; }
+}
+
 .line-clamp {
   display: -webkit-box;
   -webkit-line-clamp: 3;

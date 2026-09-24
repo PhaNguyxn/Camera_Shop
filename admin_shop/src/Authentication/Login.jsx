@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import UserAPI from '../API/UserAPI';
 
 function Login() {
@@ -113,14 +112,6 @@ function Login() {
         </button>
       </form>
 
-      <div className="text-center mt-4">
-        <span style={{ fontSize: "14px" }}>
-          Don't have an account?{" "}
-          <Link to="/register" style={{ color: "#ff4d6d", fontWeight: "bold" }}>
-            Sign Up
-          </Link>
-        </span>
-      </div>
     </div>
   </div>
 );

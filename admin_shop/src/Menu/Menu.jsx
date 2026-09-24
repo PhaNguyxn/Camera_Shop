@@ -1,6 +1,7 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 
-function Menu(props) {
+function Menu({ onNavigate }) {
     return (
         <aside className="left-sidebar" data-sidebarbg="skin6">
             <div className="scroll-sidebar" data-sidebarbg="skin6">
@@ -8,10 +9,10 @@ function Menu(props) {
                     <ul id="sidebarnav">
                         {/* --- DASHBOARD --- */}
                         <li className="sidebar-item"> 
-                            <a className="sidebar-link sidebar-link" href='/'>
+                            <NavLink exact className="sidebar-link" activeClassName="active" to='/' onClick={onNavigate}>
                                 <i data-feather="home" className="feather-icon"></i>
                                 <span className="hide-menu">Dashboard</span>
-                            </a>
+                            </NavLink>
                         </li>
 
                         <li className="list-divider"></li>
@@ -21,34 +22,34 @@ function Menu(props) {
 
                         {/* Mục Users */}
                         <li className="sidebar-item"> 
-                            <a className="sidebar-link" href="/users">
+                            <NavLink className="sidebar-link" activeClassName="active" to="/users" onClick={onNavigate}>
                                 <i data-feather="users" className="feather-icon"></i>
                                 <span className="hide-menu">Users</span>
-                            </a>
+                            </NavLink>
                         </li>
 
                         {/* Mục Products */}
                         <li className="sidebar-item"> 
-                            <a className="sidebar-link" href="/products">
+                            <NavLink className="sidebar-link" activeClassName="active" to="/products" onClick={onNavigate}>
                                 <i data-feather="camera" className="feather-icon"></i>
                                 <span className="hide-menu">Products</span>
-                            </a>
+                            </NavLink>
                         </li>
 
                         {/* Mục Categories */}
                         <li className="sidebar-item"> 
-                            <a className="sidebar-link" href="/categories">
+                            <NavLink className="sidebar-link" activeClassName="active" to="/categories" onClick={onNavigate}>
                                 <i data-feather="layers" className="feather-icon"></i>
                                 <span className="hide-menu">Categories</span>
-                            </a>
+                            </NavLink>
                         </li>
 
                         {/* Mục History */}
                         <li className="sidebar-item"> 
-                            <a className="sidebar-link" href="/history">
+                            <NavLink className="sidebar-link" activeClassName="active" to="/history" onClick={onNavigate}>
                                 <i data-feather="file-text" className="feather-icon"></i>
                                 <span className="hide-menu">History</span>
-                            </a>
+                            </NavLink>
                         </li>
 
                         <li className="list-divider"></li>

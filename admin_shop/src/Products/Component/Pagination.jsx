@@ -33,7 +33,7 @@ function Pagination(props) {
             return
         }
 
-        const newPage = parseInt(value) - 1
+        const newPage = parseInt(value, 10) - 1
         handlerChangePage(newPage)
 
     }
@@ -44,15 +44,15 @@ function Pagination(props) {
             return
         }
 
-        const newPage = parseInt(value) + 1
+        const newPage = parseInt(value, 10) + 1
         handlerChangePage(newPage)
     }
 
     return (
-        <nav aria-label="Page navigation example" className="pt-5">
+        <nav aria-label="Phân trang sản phẩm" className="pt-4">
             <ul className="pagination justify-content-center justify-content-lg-end">
                 <li className="page-item">
-                    <button className="page-link" 
+                    <button type="button" className="page-link" aria-label="Trang trước"
                         onClick={() => onDownPage(page)} 
                         disabled={page <= 1 }>
                         <span>«</span>
@@ -60,16 +60,13 @@ function Pagination(props) {
                 </li>
                 <IndexPage indexPage={indexPage} handlerChangePage={handlerChangePage} pagination={pagination}/>
                 <li className="page-item">
-                    <button className="page-link" 
+                    <button type="button" className="page-link" aria-label="Trang sau"
                         onClick={() => onUpPage(page)} 
                         disabled={page >= totalPage}>
                             <span>»</span>
                     </button>
                 </li>
             </ul>
-            <div className="pagination justify-content-center justify-content-lg-end">
-                <p className="text-small text-muted mb-0">Showing 1–9 of {parseInt(totalPage) * 9} results</p>
-            </div>
         </nav>
     );
 }
