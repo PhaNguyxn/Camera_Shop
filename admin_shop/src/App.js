@@ -40,8 +40,8 @@ function Layout() {
 
         <Route path="/users" component={Users} />
 
-        <Route exact path="/products" component={Products} />
         <Route path="/products/view-edit" component={ViewEdit} />
+        <Route exact path="/products" component={Products} />
 
         <Route exact path="/categories" component={Categories} />
         <Route path="/categories/view-edit" component={ViewCategories} />

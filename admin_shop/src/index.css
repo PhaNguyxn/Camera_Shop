@@ -18,3 +18,7 @@ code {
   -webkit-box-orient: vertical;  
   overflow: hidden;
 }
+
+#main-wrapper .page-wrapper {
+  display: block;
+}
