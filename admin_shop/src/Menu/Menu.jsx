@@ -1,89 +1,53 @@
-import React from 'react';
-import { NavLink } from "react-router-dom";
+import React, { useEffect } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import feather from "feather-icons";
 
-function Menu(props) {
-    return (
-      <aside className="left-sidebar" data-sidebarbg="skin6">
-        <div className="scroll-sidebar" data-sidebarbg="skin6">
-          <nav className="sidebar-nav">
-            <ul id="sidebarnav">
-              <li className="sidebar-item">
+const menuItems = [
+  { to: "/", label: "Tổng quan", icon: "grid", exact: true },
+  { to: "/users", label: "Người dùng", icon: "users" },
+  { to: "/products", label: "Sản phẩm", icon: "camera" },
+  { to: "/categories", label: "Danh mục", icon: "layers" },
+  { to: "/history", label: "Đơn hàng", icon: "shopping-bag" },
+];
+
+function Menu() {
+  const location = useLocation();
+
+  useEffect(() => {
+    feather.replace();
+  }, [location.pathname]);
+
+  return (
+    <aside className="left-sidebar" data-sidebarbg="skin6">
+      <div className="scroll-sidebar" data-sidebarbg="skin6">
+        <nav className="sidebar-nav" aria-label="Menu quản trị">
+          <ul id="sidebarnav">
+            <li className="nav-small-cap">
+              <span className="hide-menu">QUẢN TRỊ</span>
+            </li>
+
+            {menuItems.map((item) => (
+              <li className="sidebar-item" key={item.to}>
                 <NavLink
-                  exact
-                  to="/"
+                  exact={item.exact}
+                  to={item.to}
                   className="sidebar-link"
                   activeClassName="active"
                 >
-                  <i data-feather="home" className="feather-icon"></i>
-                  <span className="hide-menu">Dashboard</span>
+                  <i
+                    data-feather={item.icon}
+                    className="feather-icon"
+                    aria-hidden="true"
+                  />
+                  <span className="hide-menu">{item.label}</span>
                 </NavLink>
               </li>
-
-              <li className="list-divider"></li>
-
-              {/* --- COMPONENTS / DATATABLES --- */}
-              <li className="nav-small-cap">
-                <span className="hide-menu">Management</span>
-              </li>
-
-              {/* Mục Users */}
-              <li className="sidebar-item">
-                <NavLink
-                  exact
-                  to="/users"
-                  className="sidebar-link"
-                  activeClassName="active"
-                >
-                  <i data-feather="users" className="feather-icon"></i>
-                  <span className="hide-menu">Users</span>
-                </NavLink>
-              </li>
-
-              {/* Mục Products */}
-              <li className="sidebar-item">
-                <NavLink
-                  exact
-                  to="/products"
-                  className="sidebar-link"
-                  activeClassName="active"
-                >
-                  <i data-feather="camera" className="feather-icon"></i>
-                  <span className="hide-menu">Products</span>
-                </NavLink>
-              </li>
-
-              {/* Mục Categories */}
-              <li className="sidebar-item">
-                <NavLink
-                  exact
-                  to="/categories"
-                  className="sidebar-link"
-                  activeClassName="active"
-                >
-                  <i data-feather="layers" className="feather-icon"></i>
-                  <span className="hide-menu">Categories</span>
-                </NavLink>
-              </li>
-
-              {/* Mục History */}
-              <li className="sidebar-item">
-                <NavLink
-                  exact
-                  to="/history"
-                  className="sidebar-link"
-                  activeClassName="active"
-                >
-                  <i data-feather="file-text" className="feather-icon"></i>
-                  <span className="hide-menu">History</span>
-                </NavLink>
-              </li>
-
-              <li className="list-divider"></li>
-            </ul>
-          </nav>
-        </div>
-      </aside>
-    );
+            ))}
+          </ul>
+        </nav>
+      </div>
+    </aside>
+  );
 }
 
 export default Menu;
