@@ -13,6 +13,8 @@ function Home(props) {
     const [historyList, setHistoryList] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    
+
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
@@ -21,21 +23,35 @@ function Home(props) {
                     ProductAPI.getAPI()
                 ]);
 
-                const histories = allHistories || [];
-                const products = allProducts || [];
+                const histories = Array.isArray(allHistories)
+                  ? allHistories
+                  : [];
+                const products = Array.isArray(allProducts) ? allProducts : [];
 
-                const earnings = histories.reduce((sum, item) => sum + Number(item.total || 0), 0);
-                const uniqueClients = new Set(histories.map(item => item.idUser)).size;
+                const earnings = histories
+                  .filter((order) => order.paymentStatus === "PAID")
+                  .reduce(
+                    (sum, order) =>
+                      sum + Number(order.totalAmount ?? order.total ?? 0),
+                    0,
+                  );
 
                 setStatistics({
-                    totalClients: uniqueClients,
-                    totalEarnings: earnings,
-                    totalOrders: histories.length,
-                    totalProducts: products.length
+                  totalClients: new Set(
+                    histories.map((order) => order.idUser).filter(Boolean),
+                  ).size,
+                  totalEarnings: earnings,
+                  totalOrders: histories.length,
+                  totalProducts: products.length,
                 });
 
-                const sortedHistories = [...histories].reverse().slice(0, 5);
-                setHistoryList(sortedHistories);
+                setHistoryList(
+                  [...histories]
+                    .sort(
+                      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+                    )
+                    .slice(0, 5),
+                );
                 setLoading(false);
             } catch (error) {
                 console.error("Lỗi khi kết nối dữ liệu thật:", error);
