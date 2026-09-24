@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import ProductAPI from "../API/ProductAPI";
 
@@ -8,6 +8,17 @@ import { errorMessage } from "../utils/admin";
 
 export default function ViewCategories() {
   const history = useHistory();
+
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const { search } = useLocation();
   const categoryId = new URLSearchParams(search).get("id");
 
@@ -66,12 +77,20 @@ export default function ViewCategories() {
       } else {
         await ProductAPI.createCategory(body);
       }
-
-      history.push("/categories");
     } catch (err) {
-      setError(errorMessage(err));
+      if (mountedRef.current) {
+        setError(errorMessage(err));
+      }
+
+      return;
     } finally {
-      setBusy(false);
+      if (mountedRef.current) {
+        setBusy(false);
+      }
+    }
+    
+    if (mountedRef.current) {
+      history.push("/categories");
     }
   };
 

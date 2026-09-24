@@ -10,13 +10,14 @@ function LoginLink() {
   const dispatch = useDispatch();
 
   const handleLogout = () => {
-
+    sessionStorage.removeItem("token");
     sessionStorage.removeItem("id_user");
-
     sessionStorage.removeItem("name_user");
+    sessionStorage.removeItem("role");
+
+    localStorage.removeItem("token");
 
     dispatch(deleteSession(""));
-
     window.dispatchEvent(new Event("cartUpdated"));
   };
 

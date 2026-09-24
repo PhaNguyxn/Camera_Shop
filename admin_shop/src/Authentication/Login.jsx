@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Redirect, useHistory } from "react-router-dom";
 import UserAPI from "../API/UserAPI";
 import { Field, Icon, Notice } from "../components/AdminUI";
@@ -6,6 +6,16 @@ import { errorMessage } from "../utils/admin";
 
 export default function Login() {
   const history = useHistory();
+
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,6 +45,7 @@ export default function Login() {
         email: email.trim().toLowerCase(),
         password,
       });
+      if (!mountedRef.current) return;
 
       if (!response?.token || !response?.user?._id) {
         throw new Error("Phản hồi đăng nhập không hợp lệ.");
@@ -48,12 +59,21 @@ export default function Login() {
       sessionStorage.setItem("id_user", response.user._id);
       sessionStorage.setItem("name_user", response.user.fullname || "");
       sessionStorage.setItem("role", response.user.role);
-
-      history.replace("/");
     } catch (err) {
-      setError(errorMessage(err));
+      if (mountedRef.current) {
+        setError(errorMessage(err));
+      }
+
+      return;
     } finally {
-      setBusy(false);
+      if (mountedRef.current) {
+        setBusy(false);
+      }
+    }
+
+    // Chuyển trang sau khi hoàn tất cập nhật state.
+    if (mountedRef.current) {
+      history.replace("/");
     }
   };
 
@@ -73,7 +93,6 @@ export default function Login() {
             thống quản trị Camera Shop.
           </p>
         </div>
-
       </section>
 
       <section className="ad-login-content">

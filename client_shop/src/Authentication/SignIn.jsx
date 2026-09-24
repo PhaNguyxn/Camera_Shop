@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useHistory } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import queryString from "query-string";
@@ -11,6 +11,17 @@ import "./Auth.css";
 
 function SignIn() {
   const history = useHistory();
+
+  const mountedRef = useRef(false);
+  
+    useEffect(() => {
+      mountedRef.current = true;
+  
+      return () => {
+        mountedRef.current = false;
+      };
+    }, []);
+
   const dispatch = useDispatch();
 
   const listCart = useSelector((state) => state.Cart.listCart);
@@ -60,20 +71,16 @@ function SignIn() {
 
       const response = await UserAPI.postLogin(body);
 
-      console.log("LOGIN RESPONSE:", response);
-
       if (!response || !response.user) {
         setErrorLogin("Invalid login data.");
         return;
       }
 
       const user = response.user;
-      const token = response.token;
 
-      localStorage.setItem("token", token);
-
+      sessionStorage.setItem("token", response.token);
       sessionStorage.setItem("id_user", user._id);
-      sessionStorage.setItem("name_user", user.fullname);
+      sessionStorage.setItem("name_user", user.fullname || "");
       sessionStorage.setItem("role", user.role);
 
       dispatch(addSession(user._id));
@@ -114,7 +121,6 @@ function SignIn() {
           <div className="auth-visual-overlay"></div>
 
           <div className="auth-visual-content">
-
             <div className="auth-visual-text">
               <span className="auth-eyebrow">CAMERA SHOP</span>
 

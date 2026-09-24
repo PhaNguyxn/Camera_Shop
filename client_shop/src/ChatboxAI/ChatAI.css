@@ -1,543 +1,694 @@
-/* Container tổng */
-.chatbot-wrapper {
+.csai {
+  --csai-ink: #191919;
+  --csai-gold: #cba462;
+  --csai-border: #e9e6df;
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1050;
+  color: var(--csai-ink);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  line-height: 1.5;
+  text-align: left;
+  letter-spacing: normal;
+}
+.csai *,
+.csai *::before,
+.csai *::after {
+  box-sizing: border-box;
+}
+.csai button,
+.csai textarea,
+.csai input {
+  font: inherit;
+  letter-spacing: normal;
+}
+.csai button {
+  cursor: pointer;
+  margin: 0;
+  text-transform: none;
+}
+.csai button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.csai button:focus-visible,
+.csai a:focus-visible,
+.csai textarea:focus-visible {
+  outline: 3px solid var(--csai-gold);
+  outline-offset: 3px;
+}
+.csai svg {
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.csai a {
+  color: inherit;
+  text-decoration: none;
+}
+.csai a:hover {
+  text-decoration: underline;
+}
+.csai-launcher {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 56px;
+  padding: 0 18px;
+  margin-left: auto !important;
+  border: 1px solid #34312b;
+  border-radius: 40px;
+  background: var(--csai-ink);
+  color: #fff;
+  box-shadow: 0 8px 28px #0003;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+.csai-launcher:hover {
+  transform: translateY(-3px);
+  background: #2a2824;
+}
+.csai-launcher > svg {
+  color: #e2bf81;
+}
+.csai-launcher > span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.csai-launcher small {
+  border: 1px solid #d7af6855;
+  color: #e2bf81;
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.csai-launcher--open {
+  width: 52px;
+  min-height: 52px;
+  justify-content: center;
+  padding: 0;
+}
+.csai-panel {
+  position: absolute;
+  right: 0;
+  bottom: 70px;
+  width: 414px;
+  max-width: calc(100vw - 32px);
+  height: 650px;
+  max-height: calc(100vh - 120px);
+  max-height: calc(100dvh - 120px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--csai-border);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow:
+    0 24px 70px #0002,
+    0 4px 16px #0000000a;
+  animation: csai-appear 0.2s ease-out;
+}
+.csai-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 21px 20px;
+  background: #191919;
+  color: #fff;
+}
+.csai-brand-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 1px solid #cba46266;
+  border-radius: 13px;
+  color: #e3c184;
+  background: #ffffff06;
+}
+.csai-heading {
+  flex: 1;
+  min-width: 0;
+}
+.csai-eyebrow {
+  display: block;
+  font-size: 9px;
+  line-height: 1.6;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #a27835;
+}
+.csai-header .csai-eyebrow {
+  color: #daba85;
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+.csai-heading h2 {
+  margin: 3px 0 4px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #fff;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.csai-heading p {
+  font-size: 10px;
+  color: #c0bfb9;
+  margin: 0;
+  line-height: 1.5;
+}
+.csai-icon-button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.csai-icon-button:hover {
+  background: #88888816;
+}
+.csai-close {
+  color: #ddd;
+  align-self: flex-start;
+}
+.csai-close:hover {
+  background: #ffffff18;
+}
+.csai-conversation {
+  flex: 1;
+  min-height: 0;
+  padding: 22px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #d8d3c9 transparent;
+  background: #faf9f6;
+}
+.csai-welcome {
+  padding: 2px 4px 8px;
+}
+.csai-welcome-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  background: #eee6d7;
+  color: #8b672d;
+  border-radius: 16px;
+  margin-bottom: 19px;
+}
+.csai-welcome h3 {
+  font-family: inherit;
+  font-style: normal;
+  font-size: 25px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: #212121;
+  letter-spacing: -0.7px;
+  margin: 10px 0 12px;
+  text-transform: none;
+}
+.csai-welcome > p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #76716a;
+  margin: 0 0 21px;
+  max-width: 310px;
+}
+.csai-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.csai-suggestions button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 13px;
+  width: 100%;
+  border: 1px solid #e6e1d7;
+  border-radius: 10px;
+  background: #fff;
+  color: #35322e;
+  font-size: 12px;
+  text-align: left;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.csai-suggestions button svg {
+  color: #9a783e;
+}
+.csai-suggestions button:hover {
+  border-color: var(--csai-gold);
+  background: #fffdf8;
+}
+.csai-photo-hint {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: #898277;
+  font-size: 10px;
+  margin: 16px 0 0;
+}
+.csai-log {
+  display: flex;
+  flex-direction: column;
+  gap: 21px;
+}
+.csai-message {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: 0;
+}
+.csai-message--user {
+  justify-content: flex-end;
+}
+.csai-avatar {
+  width: 28px;
+  height: 28px;
+  margin-top: 23px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: #ede4d3;
+  color: #8b672d;
+  display: grid;
+  place-items: center;
+}
+.csai-message-body {
+  max-width: calc(100% - 36px);
+  min-width: 0;
+}
+.csai-message--user .csai-message-body {
+  max-width: 86%;
+}
+.csai-sender {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  color: #847b6f;
+  margin: 0 0 6px 3px;
+}
+.csai-message--user .csai-sender {
+  text-align: right;
+  margin-right: 3px;
+}
+.csai-bubble {
+  padding: 12px 14px;
+  border: 1px solid var(--csai-border);
+  border-radius: 2px 15px 15px 15px;
+  background: #fff;
+}
+.csai-message--user .csai-bubble {
+  background: #242321;
+  border-color: #242321;
+  color: #fff;
+  border-radius: 15px 2px 15px 15px;
+}
+.csai-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.8;
+  color: inherit;
+  margin: 0;
+}
+.csai-text strong {
+  font-weight: 700;
+  color: inherit;
+}
+.csai-sent-image {
+  width: auto;
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+  margin-bottom: 9px;
+}
+.csai-bubble--error {
+  border-color: #edcfc8;
+  background: #fff7f3;
+  color: #8e4337;
+}
+.csai-retry {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 11px !important;
+  border: 0;
+  background: transparent;
+  color: #8e4337;
+  font-weight: 600 !important;
+  padding: 8px 0 0;
+}
+.csai-products {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 13px;
+}
+.csai-product-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: #8c7b5e;
+  letter-spacing: 1.2px;
+}
+.csai-product {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid var(--csai-border);
+  border-radius: 12px;
+  background: #fff;
+}
+.csai-product-image {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 68px;
+  border-radius: 8px;
+  background: #f7f6f3;
+  flex-shrink: 0;
+  color: #8c7b5e !important;
+}
+.csai-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+}
+.csai-product-info {
+  min-width: 0;
+  flex: 1;
+}
+.csai-product-info > a {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.csai-product-info > strong {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 700;
+  color: #8a652b;
+}
+.csai-product-info > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 7px;
+  padding: 4px 7px;
+  border: 1px solid #e8e1d4;
+  border-radius: 5px;
+  background: #faf7f1;
+  color: #554329;
+  font-size: 10px;
+}
+.csai-product-info > button:hover {
+  background: #eee5d5;
+}
+.csai-typing {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-top: 18px;
+  color: #8c8274;
+  font-size: 10px;
+}
+.csai-typing .csai-avatar {
+  margin-top: 0;
+}
+.csai-dots {
+  display: flex;
+  gap: 3px;
+}
+.csai-dots span {
+  width: 4px;
+  height: 4px;
+  background: #af8b4d;
+  border-radius: 50%;
+  animation: csai-dot 1.2s infinite;
+}
+.csai-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.csai-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.csai-footer {
+  flex-shrink: 0;
+  padding: 13px 16px 10px;
+  border-top: 1px solid var(--csai-border);
+  background: #fff;
+}
+.csai-composer {
+  margin: 0;
+  border: 1px solid #ddd8cf;
+  border-radius: 13px;
+  padding: 11px 11px 9px;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+.csai-composer:focus-within {
+  border-color: #bb9556;
+  box-shadow: 0 0 0 3px #cba46214;
+}
+.csai-composer textarea {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  max-height: 110px;
+  padding: 0;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  background: transparent;
+  color: #242321;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.csai-composer textarea:focus-visible {
+  outline: none;
+}
+.csai-composer textarea::placeholder {
+  color: #a0998e;
+}
+.csai-composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.csai-attach-button {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 4px 0;
+  background: transparent;
+  border: 0;
+  color: #807665;
+  font-size: 10px !important;
+}
+.csai-attach-button:hover {
+  color: #30271b;
+}
+.csai-enter-hint {
+  margin-left: auto;
+  font-size: 9px;
+  color: #a1998e;
+}
+.csai-send {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  background: #242321;
+  color: #e9c98e;
+  border: 0;
+  border-radius: 10px;
+}
+.csai-send:hover:not(:disabled) {
+  background: #494031;
+}
+.csai-disclaimer {
+  text-align: center;
+  font-size: 9px;
+  line-height: 1.5;
+  color: #9a9388;
+  margin: 9px 0 0;
+}
+.csai-attachment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px;
+  background: #faf8f3;
+  border: 1px solid var(--csai-border);
+  border-radius: 10px;
+}
+.csai-attachment > img {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.csai-attachment > div {
+  min-width: 0;
+  flex: 1;
+}
+.csai-attachment strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+}
+.csai-attachment span {
+  display: block;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #8a8275;
+  max-width: 210px;
+}
+.csai-notice {
+  display: flex;
+  gap: 5px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.csai-notice > div {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.csai-notice--error {
+  color: #8e4337;
+  background: #fff2ed;
+}
+.csai-notice--success {
+  color: #386045;
+  background: #eef5ef;
+}
+.csai-notice a {
+  display: block;
+  text-decoration: underline;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.csai-notice .csai-icon-button {
+  width: 23px;
+  height: 23px;
+}
+.csai-image-status {
+  margin: 0 0 8px;
+  color: #8a652b;
+  font-size: 11px;
+}
+@keyframes csai-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes csai-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+@media (max-width: 480px) {
+  .csai {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .csai-panel {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-/* Nút kích hoạt (Launcher) */
-.chat-launcher {
-    width: 60px;
-    height: 60px;
-    background: #2b4570; /* Màu xanh đậm như ảnh */
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    transition: transform 0.3s ease;
-}
-
-.chat-launcher i {
-    color: white;
+    left: 10px;
+    right: 10px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: none;
+    height: 650px;
+    max-height: calc(100vh - 94px - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 94px - env(safe-area-inset-bottom));
+    border-radius: 17px;
+  }
+  .csai-header {
+    padding: 16px;
+  }
+  .csai-conversation {
+    padding: 18px 13px;
+  }
+  .csai-footer {
+    padding: 10px 12px;
+  }
+  .csai-composer textarea {
+    font-size: 16px;
+  }
+  .csai-launcher {
+    min-height: 50px;
+  }
+  .csai-enter-hint {
+    display: none;
+  }
+  .csai-send {
+    margin-left: auto !important;
+  }
+  .csai-welcome h3 {
     font-size: 24px;
-}
-
-.chat-launcher:hover {
-    transform: scale(1.1);
-}
-
-/* Khung Chat chính */
-.chat-container-main {
-    position: absolute;
-    bottom: 90px;
-    right: 0;
-    width: 480px;
-    height: 700px;
-    max-height: 80vh;
-    background: white;
-    border-radius: 20px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    overflow: hidden;
-    animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Header */
-.chat-header-custom {
-    padding: 15px 20px;
-    background: white;
-    border-bottom: 1px solid #f0f0f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.ai-status-dot {
-    width: 10px;
-    height: 10px;
-    background: #4caf50;
-    border-radius: 50%;
-    display: inline-block;
-    border: 2px solid #e8f5e9;
-}
-
-/* Khu vực nội dung chat */
-.chat-content-area {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    background-color: #f9f9f9;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-/* Bubble tin nhắn */
-.msg-box {
-    display: flex;
-    max-width: 85%;
-    gap: 10px;
-}
-
-.user-msg {
-    align-self: flex-end;
-    flex-direction: row-reverse;
-}
-
-.ai-msg {
-    align-self: flex-start;
-}
-
-.bubble {
-    padding: 12px 16px;
-    border-radius: 15px;
-    font-size: 14px;
-    line-height: 1.5;
-    position: relative;
-}
-
-.user-msg .bubble {
-    background: #f0f1f4;
-    color: white;
-    border-bottom-right-radius: 2px;
-}
-
-.ai-msg .bubble {
-    background: white;
-    color: #333;
-    border-bottom-left-radius: 2px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.ai-icon-small {
-    width: 30px;
-    height: 30px;
-    background: #4caf50;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 12px;
-    flex-shrink: 0;
-}
-
-/* Khu vực sản phẩm gợi ý (Card trắng như ảnh) */
-.product-scroll-area {
-    margin-top: 12px;
-    background: white;
-    border: 1px solid #eee;
-    border-radius: 12px;
-    padding: 12px;
-}
-
-.product-item-horizontal {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-}
-
-.product-item-horizontal img {
-    width: 70px;
-    height: 70px;
-    object-fit: cover;
-    border-radius: 8px;
-    background: #f5f5f5;
-}
-
-.p-name {
-    font-weight: 600;
-    font-size: 14px;
-    color: #333;
-}
-
-.p-price {
-    color: #000;
-    font-weight: 700;
-    margin-top: 4px;
-}
-
-/* Nút bấm nhanh (Quick Buttons) */
-.quick-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.btn-q {
-    padding: 6px 16px;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 20px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-q:hover {
-    background: #f0f0f0;
-    border-color: #ccc;
-}
-
-/* Footer & Input */
-.chat-input-footer {
-    padding: 15px;
-    background: white;
-    border-top: 1px solid #eee;
-}
-
-.input-wrapper {
-    display: flex;
-    align-items: center;
-    background: #f0f2f5;
-    border-radius: 25px;
-    padding: 5px 15px;
-    gap: 10px;
-}
-
-.input-wrapper input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    padding: 10px 5px;
-    outline: none;
-    font-size: 14px;
-}
-
-.input-wrapper i {
-    color: #65676b;
-    cursor: pointer;
-    font-size: 18px;
-}
-
-.input-wrapper button {
-    background: none;
-    border: none;
-    color: #2b4570;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Preview ảnh trước khi gửi */
-.preview-container {
-    position: relative;
-    display: inline-block;
-    margin-bottom: 10px;
-    padding: 5px;
-}
-
-.preview-container img {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    object-fit: cover;
-    border: 2px solid #2b4570;
-}
-
-.preview-container i {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    color: #ff4d4d;
-    background: white;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-/* Loading animation */
-.typing-loader {
-    font-size: 12px;
-    color: #888;
-    font-style: italic;
-    margin-left: 40px;
-}
-
-/* Image in chat */
-.img-in-chat {
-    max-width: 100%;
-    border-radius: 10px;
-    margin-bottom: 8px;
-}
-
-/* Container chứa các card sản phẩm */
-.recommended-container {
-    margin-top: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-/* Card sản phẩm kiểu mới */
-.product-card-premium {
-    background: white;
-    border: 1px solid #f0f0f0;
-    border-radius: 12px;
-    padding: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    transition: transform 0.2s;
-}
-
-.product-card-body {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    position: relative;
-}
-
-.product-img-thumb {
-    width: 65px;
-    height: 65px;
-    object-fit: contain;
-    border-radius: 8px;
-}
-
-.product-details {
-    flex: 1;
-}
-
-.p-brand-tag {
-    font-size: 11px;
-    color: #888;
-    margin-bottom: 2px;
-}
-
-.p-main-name {
-    font-weight: 600;
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 5px;
-}
-
-.p-main-price {
-    font-weight: 700;
-    font-size: 15px;
-    color: #000;
-}
-
-/* Nút + Thêm nhỏ bên phải */
-.add-quick-btn {
-    background: transparent;
-    border: none;
-    color: #555;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-/* Nhóm nút gợi ý dưới cùng (Action Chips) */
-.action-suggestion-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 15px;
-}
-
-.action-chip {
-    background: white;
-    border: 1px solid #e0e0e0;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 13px;
-    color: #444;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.action-chip:hover {
-    background: #f8f9fa;
-    border-color: #2b4570;
-    color: #2b4570;
-}
-
-/* Layout tin nhắn AI có Avatar */
-.ai-msg {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-}
-
-.ai-avatar {
-    width: 32px;
-    height: 32px;
-    background: #4caf50;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 14px;
-    flex-shrink: 0;
-}
-
-.bubble-wrapper {
-    max-width: 90%;
-}
-
-.ai-msg .bubble {
-    background: #fff;
-    border: 1px solid #eee;
-    color: #333;
-    border-radius: 18px 18px 18px 4px;
-    padding: 12px 16px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-}
-
-.product-card-premium {
-    background: white;
-    border-radius: 12px;
-    padding: 12px;
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border: 1px solid #f0f0f0;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    position: relative;
-}
-
-.p-thumb {
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-}
-
-.p-details .p-name {
-    font-weight: 600;
-    font-size: 14px;
-    color: #222;
-}
-
-.p-details .p-price {
-    font-weight: 700;
-    font-size: 14px;
-    color: #000;
-    margin-top: 4px;
-}
-
-.p-action {
-    margin-left: auto;
-    color: #555;
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-    padding: 5px;
-}
-
-.p-action:hover {
-    color: #2b4570;
-}
-
-/* Nút gợi ý (Chips) */
-.suggestion-chips {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-    flex-wrap: wrap;
-}
-
-.chip {
-    background: white;
-    border: 1px solid #e0e0e0;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    cursor: pointer;
-    color: #444;
-}
-
-.chip:hover {
-    border-color: #2b4570;
-    color: #2b4570;
-}
-
-@media (max-width: 576px) {
-    .chat-container-main {
-        width: 95vw;
-        right: -10px;
-        height: 85vh;
-    }
-}
-
-.text-content {
-    white-space: pre-line; 
-    line-height: 1.6;      
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 10px;
-}
-
-.text-content b, .text-content strong {
-    display: block;
-    margin-top: 10px;
-    color: #000;
-}
-
-
-.click-for-detail {
-    cursor: pointer; 
-    transition: all 0.2s ease-in-out; 
-}
-
-
-.product-img-thumb.click-for-detail:hover {
-    opacity: 0.8; 
-    transform: scale(1.05); 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-}
-
-
-.p-main-name.click-for-detail:hover {
-    color: #e67e22; 
-    text-decoration: underline; 
-}
-
-.product-image-link {
-    display: block;
-    text-decoration: none;
-    cursor: pointer;
-    position: relative;
-    z-index: 2;
-}
-
-.product-img-thumb {
-    cursor: pointer;
-    display: block;
-}
-
-.p-main-name {
-    display: block;
-    text-decoration: none;
-    color: inherit;
-    cursor: pointer;
-    position: relative;
-    z-index: 2;
-}
-
-.p-main-name:hover {
-    text-decoration: underline;
-}
-
-.click-for-detail {
-    cursor: pointer;
-}
-
-.p-action {
-    position: relative;
-    z-index: 3;
-    cursor: pointer;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .csai *,
+  .csai *::before,
+  .csai *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
