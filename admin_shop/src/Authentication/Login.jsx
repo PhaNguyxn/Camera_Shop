@@ -74,7 +74,6 @@ export default function Login() {
           </p>
         </div>
 
-        <small>Camera Shop · Hệ thống quản trị</small>
       </section>
 
       <section className="ad-login-content">
