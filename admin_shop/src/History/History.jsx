@@ -1,3 +1,4 @@
+import useResource from "../hooks/useResource";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import HistoryAPI from "../API/HistoryAPI";
@@ -26,7 +27,6 @@ import {
   paymentStatus,
   ORDER_LABELS,
   PAYMENT_LABELS,
-  useResource,
   errorMessage,
 } from "../utils/admin";
 

@@ -6,7 +6,10 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const upload = require("express-fileupload");
 
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
+
+// Preserve Mongoose 5 query filtering behavior after upgrading to Mongoose 6.
+mongoose.set("strictQuery", false);
 
 const app = express();
 
@@ -57,12 +60,7 @@ app.use(upload());
 app.use("/", express.static("public"));
 
 mongoose
-  .connect(process.env.MONGODB_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useCreateIndex: true,
-    useFindAndModify: false,
-  })
+  .connect(process.env.MONGODB_URL)
   .then(() => {
     console.log("MongoDB Connected...");
   })

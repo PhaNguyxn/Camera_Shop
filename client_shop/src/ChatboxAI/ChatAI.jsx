@@ -2,6 +2,15 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import AIAPI from "../API/AiAPI";
 import CartAPI from "../API/CartAPI";
+import ChatIcon from "./ChatIcon";
+import MessageText from "./MessageText";
+import ChatProducts from "./ChatProducts";
+import {
+  buildChatHistory,
+  prepareImage,
+  IMAGE_TYPES,
+  MAX_IMAGE_BYTES,
+} from "./chatUtils";
 import "./ChatAI.css";
 
 const SUGGESTIONS = [
@@ -9,116 +18,6 @@ const SUGGESTIONS = [
   "Tư vấn máy ảnh dưới 20 triệu",
   "Máy ảnh phù hợp để quay vlog",
 ];
-
-function ChatIcon({ name = "camera", size = 20 }) {
-  const paths = {
-    camera: (
-      <>
-        <path d="M14.5 4h-5L7 7H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-4z" />
-        <circle cx="12" cy="13" r="4" />
-      </>
-    ),
-    close: (
-      <>
-        <path d="m6 6 12 12M6 18 18 6" />
-      </>
-    ),
-    send: (
-      <>
-        <path d="m22 2-7 20-4-9-9-4Z" />
-        <path d="M22 2 11 13" />
-      </>
-    ),
-    image: (
-      <>
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <circle cx="8" cy="8" r="1" />
-        <path d="m21 15-5-5L5 21" />
-      </>
-    ),
-    plus: <path d="M12 5v14M5 12h14" />,
-    arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
-    spark: (
-      <>
-        <path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z" />
-        <path d="M20 2v4m-2-2h4" />
-      </>
-    ),
-  };
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {paths[name] || paths.camera}
-    </svg>
-  );
-}
-
-function MessageText({ text }) {
-  return (
-    <div className="csai-text">
-      {String(text || "")
-        .split(/(\*\*[^*]+\*\*)/g)
-        .map((part, index) =>
-          part.startsWith("**") && part.endsWith("**") ? (
-            <strong key={index}>{part.slice(2, -2)}</strong>
-          ) : (
-            part
-          ),
-        )}
-    </div>
-  );
-}
-
-function formatPrice(value) {
-  if (value === null || value === undefined || value === "") return "Liên hệ";
-  const amount =
-    typeof value === "number"
-      ? value
-      : Number(String(value).replace(/[^\d]/g, ""));
-  return Number.isFinite(amount) && amount > 0
-    ? `${amount.toLocaleString("vi-VN")} đ`
-    : "Liên hệ";
-}
-
-function prepareImage(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () =>
-      reject(new Error("Không đọc được ảnh. Vui lòng chọn lại."));
-    reader.onload = () => {
-      const image = new Image();
-      image.onerror = () =>
-        reject(new Error("Ảnh không hợp lệ. Hãy chọn ảnh JPG, PNG hoặc WebP."));
-      image.onload = () => {
-        try {
-          const scale = Math.min(1, 400 / Math.max(image.width, image.height));
-          const canvas = document.createElement("canvas");
-          canvas.width = Math.max(1, Math.round(image.width * scale));
-          canvas.height = Math.max(1, Math.round(image.height * scale));
-          const ctx = canvas.getContext("2d");
-          if (!ctx) throw new Error("Trình duyệt không thể xử lý ảnh này.");
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL("image/jpeg", 0.5));
-        } catch (error) {
-          reject(error);
-        }
-      };
-      image.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function ChatAI() {
   const [isOpen, setIsOpen] = useState(false);
@@ -174,8 +73,8 @@ export default function ChatAI() {
     event.target.value = "";
     if (!file || sending.current) return;
     if (
-      !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
-      file.size > 5 * 1024 * 1024
+      !IMAGE_TYPES.includes(file.type) ||
+      file.size > MAX_IMAGE_BYTES
     ) {
       setNotice({
         type: "error",
@@ -206,17 +105,7 @@ export default function ChatAI() {
     setLoading(true);
     setNotice(null);
     const image = attachment?.data || null;
-    const history = messages
-      .flatMap((message, index) => {
-        const reply = messages[index + 1];
-        return message.role === "user" && reply?.role === "ai" && !reply.error
-          ? [
-              { role: "user", text: message.text },
-              { role: "ai", text: reply.text },
-            ]
-          : [];
-      })
-      .slice(-4);
+    const history = buildChatHistory(messages);
     setMessages((previous) => [
       ...previous,
       { role: "user", text: text || "Tư vấn giúp tôi về hình ảnh này.", image },
@@ -413,61 +302,12 @@ export default function ChatAI() {
                       )}
                     </div>
                     {message.role === "ai" && message.products?.length > 0 && (
-                      <div className="csai-products">
-                        <span className="csai-product-label">
-                          SẢN PHẨM GỢI Ý
-                        </span>
-                        {message.products
-                          .filter(
-                            (product) => product && (product._id || product.id),
-                          )
-                          .map((product) => {
-                            const id = product._id || product.id;
-                            return (
-                              <article className="csai-product" key={id}>
-                                <Link
-                                  className="csai-product-image"
-                                  to={`/detail/${id}`}
-                                  onClick={closeChat}
-                                  aria-label={`Xem ${product.name}`}
-                                >
-                                  {product.img1 ? (
-                                    <img
-                                      src={product.img1}
-                                      alt={product.name || "Sản phẩm"}
-                                      loading="lazy"
-                                      onError={(event) => {
-                                        event.currentTarget.style.display =
-                                          "none";
-                                      }}
-                                    />
-                                  ) : (
-                                    <ChatIcon size={28} />
-                                  )}
-                                </Link>
-                                <div className="csai-product-info">
-                                  <Link
-                                    to={`/detail/${id}`}
-                                    onClick={closeChat}
-                                  >
-                                    {product.name}
-                                  </Link>
-                                  <strong>{formatPrice(product.price)}</strong>
-                                  <button
-                                    type="button"
-                                    disabled={addingId !== null}
-                                    onClick={() => addToCart(product)}
-                                  >
-                                    <ChatIcon name="plus" size={14} />
-                                    {addingId === id
-                                      ? "Đang thêm…"
-                                      : "Thêm vào giỏ"}
-                                  </button>
-                                </div>
-                              </article>
-                            );
-                          })}
-                      </div>
+                      <ChatProducts
+                        products={message.products}
+                        addingId={addingId}
+                        onAddToCart={addToCart}
+                        onNavigate={closeChat}
+                      />
                     )}
                   </div>
                 </div>
@@ -586,7 +426,7 @@ export default function ChatAI() {
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept={IMAGE_TYPES.join(",")}
                 hidden
                 onChange={chooseImage}
               />

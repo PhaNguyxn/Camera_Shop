@@ -1,3 +1,4 @@
+import useResource from "../hooks/useResource";
 import React from "react";
 import { Link } from "react-router-dom";
 import HistoryAPI from "../API/HistoryAPI";
@@ -21,7 +22,6 @@ import {
   orderStatus,
   paymentStatus,
   ORDER_LABELS,
-  useResource,
 } from "../utils/admin";
 
 async function loadDashboard() {

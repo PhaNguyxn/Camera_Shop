@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useState } from "react";
-
 export function errorMessage(error) {
   return (
     error?.response?.data?.message ||
@@ -27,12 +25,14 @@ export function amount(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
+const currencyFormatter = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+  maximumFractionDigits: 0,
+});
+
 export function money(value) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(amount(value));
+  return currencyFormatter.format(amount(value));
 }
 
 export function dateTime(value) {
@@ -112,49 +112,4 @@ export function categoryName(category) {
   }
 
   return category || "Chưa phân loại";
-}
-
-
-export function useResource(loader) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [revision, setRevision] = useState(0);
-
-  const reload = useCallback(() => {
-    setRevision((value) => value + 1);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    async function load() {
-      setLoading(true);
-      setError("");
-
-      try {
-        const result = await loader();
-
-        if (active) {
-          setData(result);
-        }
-      } catch (err) {
-        if (active) {
-          setError(errorMessage(err));
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    load();
-
-    return () => {
-      active = false;
-    };
-  }, [loader, revision]);
-
-  return { data, loading, error, reload };
 }

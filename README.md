@@ -46,7 +46,7 @@ Example:
 
 ```env
 PORT=8000
-MONGODB_URI=your_mongodb_connection_string
+MONGODB_URL=your_mongodb_connection_string
 ```
 
 Start the backend:

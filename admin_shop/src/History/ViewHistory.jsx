@@ -1,3 +1,4 @@
+import useResource from "../hooks/useResource";
 import React, { useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import HistoryAPI from "../API/HistoryAPI";
@@ -21,7 +22,6 @@ import {
   paymentStatus,
   ORDER_LABELS,
   PAYMENT_LABELS,
-  useResource,
 } from "../utils/admin";
 
 export default function ViewHistory() {

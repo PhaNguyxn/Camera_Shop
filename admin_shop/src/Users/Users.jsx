@@ -1,3 +1,4 @@
+import useResource from "../hooks/useResource";
 import React, { useState } from "react";
 import UserAPI from "../API/UserAPI";
 
@@ -17,7 +18,6 @@ import {
   asList,
   matches,
   paginate,
-  useResource,
   errorMessage,
 } from "../utils/admin";
 

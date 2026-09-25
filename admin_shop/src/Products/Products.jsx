@@ -1,3 +1,4 @@
+import useResource from "../hooks/useResource";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import ProductAPI from "../API/ProductAPI";
@@ -19,7 +20,6 @@ import {
   money,
   matches,
   paginate,
-  useResource,
   errorMessage,
 } from "../utils/admin";
 
